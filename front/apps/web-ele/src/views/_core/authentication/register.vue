@@ -3,13 +3,16 @@ import type { VbenFormSchema } from '@vben/common-ui';
 import type { Recordable } from '@vben/types';
 
 import { computed, h, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { AuthenticationRegister, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
+import { registerApi } from '#/api/core/auth';
 
 defineOptions({ name: 'Register' });
 
 const loading = ref(false);
+const router = useRouter();
 
 const formSchema = computed((): VbenFormSchema[] => {
   return [
@@ -81,9 +84,21 @@ const formSchema = computed((): VbenFormSchema[] => {
   ];
 });
 
-function handleSubmit(value: Recordable<any>) {
-  // eslint-disable-next-line no-console
-  console.log('register submit:', value);
+async function handleSubmit(value: Recordable<any>) {
+  try {
+    loading.value = true;
+    await registerApi({
+      username: value.username,
+      password: value.password,
+      password2: value.confirmPassword,
+    });
+    // 注册成功后直接跳转到登录页
+    router.push('/auth/login');
+  } catch (error) {
+    // 错误处理
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 
