@@ -13,12 +13,24 @@ import { $t, setupI18n } from '#/locales';
 import { initComponentAdapter } from './adapter/component';
 import App from './app.vue';
 import { router } from './router';
+// 导入外部组件
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 async function bootstrap(namespace: string) {
   // 初始化组件适配器
   await initComponentAdapter();
   const app = createApp(App);
-
+  
+  // 使用 Element Plus
+  app.use(ElementPlus);
+  
+  // 注册所有 Element Plus 图标
+  for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+  }
+  
   // 国际化 i18n 配置
   await setupI18n(app);
 

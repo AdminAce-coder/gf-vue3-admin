@@ -13,4 +13,5 @@ import (
 type IUserV1 interface {
 	Userinfo(ctx context.Context, req *v1.UserinfoReq) (res *v1.UserinfoRes, err error)
 	UserGetCodes(ctx context.Context, req *v1.UserGetCodesReq) (res *v1.UserGetCodesRes, err error)
+	UserGetApiInfo(ctx context.Context, req *v1.UserGetApiInfoReq) (res *v1.UserGetApiInfoRes, err error)
 }

@@ -41,6 +41,12 @@ var (
 					user.NewV1(),
 				)
 			})
+			//// 查询路由
+			//// 获取路由信息
+			//routes := s.GetRoutes()
+			//for _, route := range routes {
+			//	glog.New().Infof(ctx, "Route: %s, Method: %s", route.Route, route.Method)
+			//}
 
 			// 开启 Swagger
 			s.SetPort(5321)
@@ -49,3 +55,12 @@ var (
 		},
 	}
 )
+
+//func GetAPIInfo(ctx context.Context, s *ghttp.Server) {
+//	// 获取OpenAPI信息
+//	openAPI := s.GetOpenApi()
+//	// 打印完整的路由信息
+//	glog.New().Info(ctx, "路由信息:", openAPI.Paths)
+//	// 打印所有接口定义
+//	glog.New().Info(ctx, "接口定义:", openAPI.Components)
+//}

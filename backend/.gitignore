@@ -19,3 +19,4 @@ bin
 **/config/config.yaml
 hack/*
 manifest/*
+testv1
