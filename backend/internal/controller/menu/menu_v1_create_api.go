@@ -46,6 +46,10 @@ func (c *ControllerV1) CreateApi(ctx context.Context, req *v1.CreateApiReq) (res
 		return nil, err
 	}
 
+	// 生成控制层
+	if err = ExecCmd(ctx); err != nil {
+		return nil, err
+	}
 	glog.New().Infof(ctx, "api file path: %s", apiFilePath)
 	return &v1.CreateApiRes{}, nil
 }

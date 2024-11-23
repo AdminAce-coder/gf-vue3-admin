@@ -12,4 +12,5 @@ import (
 
 type IMenuV1 interface {
 	CreateApi(ctx context.Context, req *v1.CreateApiReq) (res *v1.CreateApiRes, err error)
+	DeleteApi(ctx context.Context, req *v1.DeleteApiReq) (res *v1.DeleteApiRes, err error)
 }

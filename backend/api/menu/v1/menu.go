@@ -22,3 +22,10 @@ type CreateApiReq struct {
 }
 type CreateApiRes struct {
 }
+
+type DeleteApiReq struct {
+	g.Meta `path:"deleteapi" method:"delete" tags:"menu" dc:"删除"`
+}
+
+type DeleteApiRes struct {
+}

@@ -3,7 +3,6 @@ package jwt
 import (
 	"errors"
 	"fmt"
-	code2 "gf-vue3-admin/internal/consts/code/currency"
 	"gf-vue3-admin/utility/docode"
 	"strings"
 	"time"
@@ -44,9 +43,9 @@ func MakeToken(Passport, Password string) (tokenString string, err error) {
 		Password: Password,
 		Username: Passport,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(3 * time.Hour * time.Duration(1))), // 过期时间3小时
-			IssuedAt:  jwt.NewNumericDate(time.Now()),                                       // 签发时间
-			NotBefore: jwt.NewNumericDate(time.Now()),                                       // 生效时间
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour * time.Duration(1))), // 过期时间3小时
+			IssuedAt:  jwt.NewNumericDate(time.Now()),                                        // 签发时间
+			NotBefore: jwt.NewNumericDate(time.Now()),                                        // 生效时间
 		}}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim) // 使用HS256算法
 	tokenString, err = token.SignedString(getMySecret())
@@ -67,11 +66,12 @@ func ParseToken(tokens string) (*MyClaims, error) {
 			if ve.Errors&jwt.ValidationErrorMalformed != 0 {
 				return nil, errors.New("that's not even a token")
 			} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
-				return nil, docode.NewError(code2.TOKEN_EXPIRED, "token is expired")
+				return nil, docode.NewError(401, "token is expired")
 			} else if ve.Errors&jwt.ValidationErrorNotValidYet != 0 {
 				return nil, errors.New("token not active yet")
 			} else {
-				return nil, errors.New("couldn't handle this token")
+				return nil, docode.NewError(401, "couldn't handle this token")
+				//return nil, errors.New("couldn't handle this token")
 			}
 		}
 	}

@@ -44,11 +44,11 @@ func (s *sAuthMiddleware) AuthMiddleware(r *ghttp.Request) {
 	if err != nil {
 		// 设置错误状态和401未授权状态码
 		// r.Response.WriteStatus(http.StatusUnauthorized)
-		if err.Error() == "token is expired" {
-			r.SetError(err)
-		} else {
-			r.SetError(err)
-		}
+		//if err.Error() == "token is expired" {
+		r.SetError(err)
+		//} else {
+		//	r.SetError(err)
+		//}
 		return // 直接返回，让 Response 中间件处理响应
 	}
 

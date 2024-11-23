@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	code2 "gf-vue3-admin/internal/consts/code/currency"
 	"gf-vue3-admin/internal/service"
 	"gf-vue3-admin/utility/docode"
 	"net/http"
@@ -41,14 +40,20 @@ func (s *sMiddleware) Returndata(r *ghttp.Request) {
 			rcode = e.Code()
 			msg = e.Error()
 			// 如果是认证相关的错误码，设置 401 状态码
-			if rcode == code2.UNAUTHORIZED || rcode == code2.TOKEN_EXPIRED {
-				httpStatus = http.StatusUnauthorized
-			} else if rcode >= 1000 && rcode < 10000 {
-				httpStatus = http.StatusBadRequest
+			//if rcode == code2.UNAUTHORIZED || rcode == code2.TOKEN_EXPIRED {
+			//if _, ok := err.(*jwt.ValidationError); ok {
+			//	httpStatus = http.StatusUnauthorized
+			//} else if rcode >= 1000 && rcode < 10000 {
+			//	httpStatus = http.StatusBadRequest
+			//} else {
+			//	httpStatus = http.StatusBadRequest
+			//}
+			isCodeSet := rcode != 0 // 检查是否传入了有效的状态码
+			if isCodeSet {
+				httpStatus = rcode
 			} else {
 				httpStatus = http.StatusBadRequest
 			}
-
 			// 返回错误的
 			// r.Response.WriteStatus(httpStatus)
 			r.Response.WriteJson(Response{

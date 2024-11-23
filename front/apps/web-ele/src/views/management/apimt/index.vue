@@ -17,9 +17,15 @@
           <el-table-column prop="path" label="API路径" width="200" />
           <el-table-column prop="method" label="请求方法" width="100" />
           <el-table-column prop="description" label="API简介" width="200" />
-          <el-table-column label="分组" width="150">
+          <el-table-column 
+            prop="apiGroup" 
+            label="分组" 
+            sortable 
+            :sort-method="sortByGroup"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
-              <el-tag v-for="tag in row.tags" :key="tag" size="small" style="margin-right: 4px">
+              <el-tag v-for="tag in row.tags" :key="tag" class="mx-1">
                 {{ tag }}
               </el-tag>
             </template>
@@ -43,7 +49,7 @@
         size="800px"
       >
         <el-form :model="formData" label-width="100px">
-          <el-form-item label="API路径">
+          <el-form-item label="API路径" required>
             <el-input v-model="formData.path" placeholder="请输入API路径" />
           </el-form-item>
           <el-form-item label="鉴权">
@@ -56,7 +62,7 @@
           <el-form-item label="API版本">
             <el-input v-model="formData.version" placeholder="请输入API版本" />
           </el-form-item>
-          <el-form-item label="请求方法">
+          <el-form-item label="请求方法" required>
             <el-select v-model="formData.method" placeholder="请选择请求方法">
               <el-option label="GET-查询" value="GET" />
               <el-option label="POST-创建" value="POST" />
@@ -162,8 +168,8 @@
   
   <script lang="ts" setup>
   import { ref, onMounted } from 'vue'
-  import { getApiInfo } from '#/api/user/apiinfo'
-  import type { ApiInfo } from '#/api/user/apiinfo'
+  import { getApiInfo,createApiInfo } from '#/api/systemctl/apiinfo'
+  import type { ApiInfo } from '#/api/systemctl/apiinfo'
   import { Plus, Delete } from '@element-plus/icons-vue'
 
   const tableData = ref<ApiInfo[]>([])
@@ -252,6 +258,14 @@
 
   const removeParameter = (index: number) => {
     formData.value.parameters.splice(index, 1)
+  }
+
+  // 添加排序方法
+  const sortByGroup = (a: ApiInfo, b: ApiInfo) => {
+    // 如果tags是数组，则比较第一个tag
+    const tagA = Array.isArray(a.tags) ? a.tags[0] || '' : ''
+    const tagB = Array.isArray(b.tags) ? b.tags[0] || '' : ''
+    return tagA.localeCompare(tagB)
   }
   </script>
   
