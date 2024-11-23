@@ -16,6 +16,7 @@ type UserinfoRes struct {
 	Username string   `json:"username" dc:"用户名"`
 }
 
+// 获取权限码
 type UserGetCodesReq struct {
 	g.Meta `path:"/codes" method:"get" tags:"user" dc:"获取权限码"`
 }

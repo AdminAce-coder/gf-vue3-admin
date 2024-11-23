@@ -38,11 +38,18 @@ func (s *sAuthMiddleware) AuthMiddleware(r *ghttp.Request) {
 		glog.Errorf(ctx, "Bearertoken token is empty")
 		r.Response.WriteStatus(http.StatusUnauthorized)
 	}
+
 	// 卸载token
 	MyClaims, err := jwt.ParseToken(TokenWithoutBearer)
 	if err != nil {
-		glog.Errorf(ctx, "Parse Token Failed")
-		r.Response.Write("Token错误")
+		// 设置错误状态和401未授权状态码
+		// r.Response.WriteStatus(http.StatusUnauthorized)
+		if err.Error() == "token is expired" {
+			r.SetError(err)
+		} else {
+			r.SetError(err)
+		}
+		return // 直接返回，让 Response 中间件处理响应
 	}
 
 	glog.New().Infof(ctx, "解析后的密码是:%s", MyClaims.Password)

@@ -29,7 +29,8 @@ function createRequestClient(baseURL: string) {
    * 重新认证逻辑
    */
   async function doReAuthenticate() {
-    console.warn('Access token or refresh token is invalid or expired. ');
+    console.log('[Auth] Starting re-authentication process');
+    console.warn('Access token or refresh token is invalid or expired.');
     const accessStore = useAccessStore();
     const authStore = useAuthStore();
     accessStore.setAccessToken(null);
@@ -37,8 +38,10 @@ function createRequestClient(baseURL: string) {
       preferences.app.loginExpiredMode === 'modal' &&
       accessStore.isAccessChecked
     ) {
+      console.log('[Auth] Showing login expired modal');
       accessStore.setLoginExpired(true);
     } else {
+      console.log('[Auth] Performing logout');
       await authStore.logout();
     }
   }
@@ -47,11 +50,18 @@ function createRequestClient(baseURL: string) {
    * 刷新token逻辑
    */
   async function doRefreshToken() {
+    console.log('[Auth] Attempting to refresh token');
     const accessStore = useAccessStore();
-    const resp = await refreshTokenApi();
-    const newToken = resp.data;
-    accessStore.setAccessToken(newToken);
-    return newToken;
+    try {
+      const resp = await refreshTokenApi();
+      const newToken = resp.data;
+      console.log('[Auth] Token refresh successful');
+      accessStore.setAccessToken(newToken);
+      return newToken;
+    } catch (error) {
+      console.error('[Auth] Token refresh failed:', error);
+      throw error;
+    }
   }
 
   function formatToken(token: null | string) {
@@ -103,6 +113,40 @@ function createRequestClient(baseURL: string) {
       // 如果没有错误信息，则会根据状态码进行提示
       ElMessage.error(errorMessage || msg);
     }),
+  );
+
+  client.addResponseInterceptor(
+    (response) => {
+      // 检查响应体中的 code
+      const res = response.data;
+      console.log('[Response Interceptor]', res);
+      
+      if (res && res.code === 401) {
+        // 将业务层面的401转换为真实的HTTP 401错误
+        return Promise.reject({
+          response: {
+            status: 401,
+            data: res
+          }
+        });
+      }
+      
+      // 其他业务错误码处理...
+      if (res.code && res.code !== 200) {
+        return Promise.reject({
+          response: {
+            status: res.code,
+            data: res
+          }
+        });
+      }
+
+      return response;
+    },
+    (error) => {
+      console.error('[Response Error Interceptor]', error);
+      return Promise.reject(error);
+    }
   );
 
   return client;

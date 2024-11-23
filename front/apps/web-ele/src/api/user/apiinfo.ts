@@ -12,6 +12,5 @@ interface ApiResponse {
 }
 
 export async function getApiInfo() {
-    return requestClient.get<ApiResponse>('/user/apiinfo');
+    return requestClient.get<ApiResponse>('/v1/user/apiinfo');
 }
-

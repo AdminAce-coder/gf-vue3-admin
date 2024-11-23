@@ -23,3 +23,12 @@ type RegisterReq struct {
 type RegisterRes struct {
 	Message string `json:"message" dc:"消息"`
 }
+
+// 刷新token
+
+type RefreshTokenReq struct {
+	g.Meta `path:"/refresh" method:"post" tags:"login" dc:"刷新token"`
+}
+type RefreshTokenRes struct {
+	NewAccessToken string `json:"newaccesstoken"`
+}
