@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/duke-git/lancet/v2/system"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/glog"
@@ -118,35 +117,32 @@ func CreateApiStruct(apiFilePath string, req *v1.CreateApiReq, apifile *Apifile)
 }
 
 // ExecCmd 执行 gf gen 命令
+// TODO 需要优化，环境变量问题
 func ExecCmd(ctx context.Context) error {
-	var stdout, stderr string
-	var err error
-
-	// 1. 首选环境变量方式
 	rootDir := os.Getenv("APP_ROOT")
 	if rootDir == "" {
-		// 2. 降级到 MainPkgPath (开发环境)
 		rootDir = gfile.MainPkgPath()
 	}
 
 	glog.Info(ctx, "执行目录:", rootDir)
 
-	if system.IsWindows() {
-		stdout, stderr, err = system.ExecCommand("powershell.exe dir", func(cmd *exec.Cmd) {
-			cmd.Dir = rootDir
-		})
-	} else {
-		stdout, stderr, err = system.ExecCommand("/bin/bash gf gen ctl", func(cmd *exec.Cmd) {
-			cmd.Dir = rootDir
-		})
-	}
+	// 创建命令
+	cmd := exec.CommandContext(ctx, "gf", "gen", "ctrl")
+	cmd.Dir = rootDir
+	cmd.Stdout = os.Stdout // 直接将输出打印到控制台
+	cmd.Stderr = os.Stderr
 
-	if err != nil {
+	// 设置环境变量
+	cmd.Env = os.Environ()
+
+	glog.Info(ctx, "执行命令:", cmd.String())
+
+	// 执行命令
+	if err := cmd.Run(); err != nil {
 		glog.Error(ctx, "执行命令失败:", err)
-		glog.Error(ctx, "错误输出:", stderr)
 		return err
 	}
 
-	glog.Info(ctx, "命令执行成功:", stdout)
+	glog.Info(ctx, "命令执行成功")
 	return nil
 }
