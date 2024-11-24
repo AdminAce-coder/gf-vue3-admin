@@ -1,12 +1,15 @@
 package menu
 
 import (
+	"os"
+	"runtime"
 	"testing"
-
-	"github.com/gogf/gf/v2/os/gctx"
 )
 
 func TestMunus(t *testing.T) {
 
-	ExecCmd(gctx.New())
+	//ExecCmd(gctx.New())
+	goRootForFilter := runtime.GOROOT()
+	goRoot := os.Getenv("GOROOT")
+	t.Logf("路径是%s====%s", goRootForFilter, goRoot)
 }

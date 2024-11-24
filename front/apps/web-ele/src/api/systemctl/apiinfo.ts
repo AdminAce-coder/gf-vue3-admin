@@ -22,7 +22,7 @@ export interface Parameter {
 
 // 创建接口的请求体
 export interface CreateApiRequest {
-    apiPath: string;           // API路径
+    apiname: string;           // API名称
     isauthentication: boolean; // 是否鉴权
     apiVersion: string;        // API版本
     method: string;            // 请求方法
@@ -31,10 +31,23 @@ export interface CreateApiRequest {
     parameters: Parameter[];   // 参数列表
 }
 
+// 创建API分组请求体
+export interface CreateApiGroupRequest {
+    apigroupname: string;
+    version: string;
+}
+
 export async function getApiInfo() {
     return requestClient.get<ApiResponse>('/v1/user/apiinfo');
 }
 
 export async function createApiInfo(data: CreateApiRequest) {
     return requestClient.post('/v1/menu/createapi', data);
+}
+
+
+
+// 创建API分组
+export async function createApiGroup(data: CreateApiGroupRequest) {
+    return requestClient.post('/v1/menu/capigp', data);
 }

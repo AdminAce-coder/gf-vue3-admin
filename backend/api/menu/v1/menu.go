@@ -11,10 +11,10 @@ type Parameter struct {
 }
 
 type CreateApiReq struct {
-	g.Meta           `path:"/createapi" method:"post" tags:"login" dc:"新增API"`
-	ApiPath          string      `json:"apiPath"`
+	g.Meta           `path:"/createapi" method:"post" tags:"menu" dc:"新增API"`
+	ApiName          string      `json:"apiName"`
 	Isauthentication bool        `json:"isauthentication"` // 是否鉴权
-	ApiVersion       string      `json:"apiVersion"`
+	ApiVersion       string      `json:"apiversion"`
 	Method           string      `json:"method"`
 	ApiGroup         string      `json:"apiGroup"`
 	Description      string      `json:"description"`
@@ -23,8 +23,18 @@ type CreateApiReq struct {
 type CreateApiRes struct {
 }
 
+type CreateApiGroupReq struct {
+	g.Meta       `path:"/capigp" method:"post" tags:"menu" dc:"新增分组"`
+	ApiGroupName string `json:"apigroupname"`
+	Version      string `json:"version"` // 分组版本
+
+}
+type CreateApiGroupRes struct {
+}
+
+// 删除API
 type DeleteApiReq struct {
-	g.Meta `path:"deleteapi" method:"delete" tags:"menu" dc:"删除"`
+	g.Meta `path:"deleteapi" method:"delete" tags:"menu" dc:"删除API"`
 }
 
 type DeleteApiRes struct {

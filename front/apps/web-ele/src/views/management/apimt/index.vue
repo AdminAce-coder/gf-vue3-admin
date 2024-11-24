@@ -1,9 +1,19 @@
 <template>
     <div class="user-management">
       <div class="operation-bar">
-        <el-button type="primary" @click="handleAdd">
-          <el-icon><Plus /></el-icon>新增API
-        </el-button>
+        <el-dropdown @command="handleAddCommand">
+          <el-button type="primary">
+            <el-icon><Plus /></el-icon>
+            新增
+            <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="api">添加API</el-dropdown-item>
+              <el-dropdown-item command="group">添加API分组</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
 
       <div class="table-container">
@@ -49,8 +59,8 @@
         size="800px"
       >
         <el-form :model="formData" label-width="100px">
-          <el-form-item label="API路径" required>
-            <el-input v-model="formData.path" placeholder="请输入API路径" />
+          <el-form-item label="API名称" required>
+            <el-input v-model="formData.apiname" placeholder="请输入API名称" />
           </el-form-item>
           <el-form-item label="鉴权">
             <el-switch
@@ -73,7 +83,6 @@
           <el-form-item label="API分组">
             <el-select
               v-model="formData.tags"
-              multiple
               filterable
               allow-create
               default-first-option
@@ -163,14 +172,34 @@
           </el-form-item>
         </el-form>
       </el-drawer>
+
+      <el-drawer
+        v-model="groupDrawer.visible"
+        :title="groupDrawer.title"
+        size="800px"
+      >
+        <el-form :model="groupFormData" label-width="100px">
+          <el-form-item label="API分组名称" required>
+            <el-input v-model="groupFormData.apigroupname" placeholder="请输入API分组名称" />
+          </el-form-item>
+          <el-form-item label="API版本">
+            <el-input v-model="groupFormData.version" placeholder="请输入API版本" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="submitGroupForm">确认</el-button>
+            <el-button @click="groupDrawer.visible = false">取消</el-button>
+          </el-form-item>
+        </el-form>
+      </el-drawer>
     </div>
   </template>
   
   <script lang="ts" setup>
   import { ref, onMounted } from 'vue'
-  import { getApiInfo,createApiInfo } from '#/api/systemctl/apiinfo'
+  import { ElMessage } from 'element-plus'
+  import { getApiInfo,createApiInfo, createApiGroup } from '#/api/systemctl/apiinfo'
   import type { ApiInfo } from '#/api/systemctl/apiinfo'
-  import { Plus, Delete } from '@element-plus/icons-vue'
+  import { Plus, Delete, ArrowDown } from '@element-plus/icons-vue'
 
   const tableData = ref<ApiInfo[]>([])
 
@@ -180,18 +209,33 @@
   })
 
   const formData = ref({
-    path: '',
+    apiname: '',
     method: '',
     needAuth: false,
     version: '',
-    tags: [] as string[],
+    tags: '',
     description: '',
-    parameters: [] as Parameter[]
+    parameters: [] as {
+      name: string;
+      type: string;
+      required: boolean;
+      description: string;
+    }[]
   })
 
   const selectedRows = ref([])
 
   const existingTags = ref<string[]>([])
+
+  const groupDrawer = ref({
+    visible: false,
+    title: '新增API分组'
+  })
+
+  const groupFormData = ref({
+    apigroupname: '',
+    version: ''
+  })
 
   const loadApiInfo = async () => {
     try {
@@ -222,21 +266,61 @@
     selectedRows.value = selection
   }
 
-  const handleAdd = () => {
-    drawer.value.visible = true
-    formData.value = {
-      path: '',
-      method: '',
-      needAuth: false,
-      tags: [],
-      description: '',
-      parameters: []
+  const handleAddCommand = (command: string) => {
+    if (command === 'api') {
+      drawer.value.visible = true
+      drawer.value.title = '新增API'
+      formData.value = {
+        apiname: '',
+        needAuth: false,
+        version: '',
+        method: '',
+        tags: '',
+        description: '',
+        parameters: []
+      }
+    } else if (command === 'group') {
+      groupDrawer.value.visible = true
+      groupFormData.value = {
+        apigroupname: '',
+        version: ''
+      }
     }
   }
 
-  const submitForm = () => {
-    console.log('提交的表单数据:', formData.value)
-    drawer.value.visible = false
+  const submitForm = async () => {
+    try {
+      const submitData = {
+        apiname: formData.value.apiname,
+        method: formData.value.method.toLowerCase(),
+        apiGroup: formData.value.tags,
+        description: formData.value.description,
+        apiversion: formData.value.version,
+        parameters: formData.value.parameters.map(param => ({
+          parametername: param.name,
+          datatype: param.type,
+          required: param.required,
+          description: param.description
+        }))
+      }
+
+      console.log('提交的数据:', submitData)
+      await createApiInfo(submitData)
+      // 只要没有抛出错误，就认为创建成功
+      ElMessage({
+        message: '创建成功',
+        type: 'success'
+      })
+      drawer.value.visible = false
+      await loadApiInfo()
+      
+    } catch (error: any) {
+      console.error('创建API失败:', error)
+      ElMessage({
+        message: error.message || '创建API失败',
+        type: 'error'
+      })
+    }
   }
   
   const handleEdit = (row: any) => {
@@ -266,6 +350,24 @@
     const tagA = Array.isArray(a.tags) ? a.tags[0] || '' : ''
     const tagB = Array.isArray(b.tags) ? b.tags[0] || '' : ''
     return tagA.localeCompare(tagB)
+  }
+
+  const submitGroupForm = async () => {
+    try {
+      await createApiGroup(groupFormData.value)
+      ElMessage({
+        message: '分组创建成功',
+        type: 'success'
+      })
+      groupDrawer.value.visible = false
+      await loadApiInfo() // 刷新数据
+    } catch (error: any) {
+      console.error('创建分组失败:', error)
+      ElMessage({
+        message: error.message || '创建分组失败',
+        type: 'error'
+      })
+    }
   }
   </script>
   
