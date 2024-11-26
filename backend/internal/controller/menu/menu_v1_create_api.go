@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	v1 "gf-vue3-admin/api/menu/v1"
+	"gf-vue3-admin/internal/service/register"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -21,25 +21,7 @@ type Apifile struct {
 }
 
 func (c *ControllerV1) CreateApi(ctx context.Context, req *v1.CreateApiReq) (res *v1.CreateApiRes, err error) {
-	// 判断/api/v1/menu/CreateApi
-	//path := strings.Split(req.ApiPath, "/")
 
-	//apfile := &Apifile{
-	//	version:     path[len(path)-3],
-	//	apiFile:     path[len(path)-2],
-	//	apiPathName: path[len(path)-1], // api名称
-	//}
-
-	//glog.New().Info(ctx, apfile.version, apfile.apiFile, apfile.apiPathName)
-
-	// 判断apiFile是否存在,不存在则创建
-	//apiFilePath := gfile.Join(gfile.Pwd(), "api", apfile.apiFile, apfile.version, apfile.apiFile+".go")
-	//if !gfile.Exists(apiFilePath) {
-	//	glog.New().Error(ctx, "api file does not exist")
-	//	// 创建api文件
-	//	if err = CreateFile(apiFilePath, apfile.version); err != nil {
-	//		return nil, err
-	//	}
 	//}
 	apiGroup := strings.Trim(req.ApiGroup, "/\\")
 	apiVersion := strings.Trim(req.ApiVersion, "/\\")
@@ -53,26 +35,11 @@ func (c *ControllerV1) CreateApi(ctx context.Context, req *v1.CreateApiReq) (res
 	}
 
 	// 生成控制层
-	if err = ExecCmd(ctx); err != nil {
+	if err = register.ExecCmd(ctx); err != nil {
 		return nil, err
 	}
 	return &v1.CreateApiRes{}, nil
 }
-
-//// 创建初始文件
-//func CreateFile(path, version string) error {
-//	file, err := gfile.Create(path)
-//	if err != nil {
-//		return err
-//	}
-//	defer file.Close()
-//	// 追加写入package
-//	_, err = file.WriteString("package " + version)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
 
 // 生成api 结构体
 func CreateApiStruct(apiFilePath string, req *v1.CreateApiReq) error {
@@ -93,7 +60,7 @@ func CreateApiStruct(apiFilePath string, req *v1.CreateApiReq) error {
 
 	// 构建请求结构体
 	structContent.WriteString(fmt.Sprintf("type %sReq struct {\n", req.ApiName))
-	structContent.WriteString(fmt.Sprintf("\tg.Meta `path:\"%s\" method:\"%s\" tags:\"%s\" dc:\"%s\"`\n",
+	structContent.WriteString(fmt.Sprintf("\tg.Meta `path:\"/%s\" method:\"%s\" tags:\"%s\" dc:\"%s\"`\n",
 		apipath, req.Method, req.ApiGroup, req.Description))
 
 	// 如果是POST请求，添加参数字段
@@ -125,33 +92,34 @@ func CreateApiStruct(apiFilePath string, req *v1.CreateApiReq) error {
 	return err
 }
 
-// ExecCmd 执行 gf gen 命令
-// TODO 需要优化，环境变量问题
-func ExecCmd(ctx context.Context) error {
-	rootDir := os.Getenv("APP_ROOT")
-	if rootDir == "" {
-		rootDir = gfile.MainPkgPath()
-	}
-
-	glog.Info(ctx, "执行目录:", rootDir)
-
-	// 创建命令
-	cmd := exec.CommandContext(ctx, "gf", "gen", "ctrl")
-	cmd.Dir = rootDir
-	cmd.Stdout = os.Stdout // 直接将输出打印到控制台
-	cmd.Stderr = os.Stderr
-
-	// 设置环境变量
-	cmd.Env = os.Environ()
-
-	glog.Info(ctx, "执行命令:", cmd.String())
-
-	// 执行命令
-	if err := cmd.Run(); err != nil {
-		glog.Error(ctx, "执行命令失败:", err)
-		return err
-	}
-
-	glog.Info(ctx, "命令执行成功")
-	return nil
-}
+//// ExecCmd 执行 gf gen 命令
+//// TODO 需要优化，环境变量问题
+//func ExecCmd(ctx context.Context) error {
+//	//rootDir := os.Getenv("APP_ROOT")
+//	//if rootDir == "" {
+//	//	rootDir = gfile.MainPkgPath()
+//	//}
+//	rootpath := utility.GetProjectRootSmart()
+//
+//	glog.Info(ctx, "执行目录:", rootpath)
+//
+//	// 创建命令
+//	cmd := exec.CommandContext(ctx, "gf", "gen", "ctrl")
+//	cmd.Dir = rootpath
+//	cmd.Stdout = os.Stdout // 直接将输出打印到控制台
+//	cmd.Stderr = os.Stderr
+//
+//	// 设置环境变量
+//	cmd.Env = os.Environ()
+//
+//	glog.Info(ctx, "执行命令:", cmd.String())
+//
+//	// 执行命令
+//	if err := cmd.Run(); err != nil {
+//		glog.Error(ctx, "执行命令失败:", err)
+//		return err
+//	}
+//
+//	glog.Info(ctx, "命令执行成功")
+//	return nil
+//}

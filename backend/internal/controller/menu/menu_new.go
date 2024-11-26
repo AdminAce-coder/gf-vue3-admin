@@ -6,7 +6,12 @@ package menu
 
 import (
 	"gf-vue3-admin/api/menu"
+	"gf-vue3-admin/internal/service/register"
 )
+
+func init() {
+	register.Register("menu", NewV1())
+}
 
 type ControllerV1 struct{}
 

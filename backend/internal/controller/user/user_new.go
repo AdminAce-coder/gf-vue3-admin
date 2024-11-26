@@ -6,7 +6,12 @@ package user
 
 import (
 	"gf-vue3-admin/api/user"
+	"gf-vue3-admin/internal/service/register"
 )
+
+func init() {
+	register.Register("user", NewV1())
+}
 
 type ControllerV1 struct{}
 

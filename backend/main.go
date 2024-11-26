@@ -2,6 +2,7 @@ package main
 
 import (
 	"gf-vue3-admin/internal/cmd"
+	_ "gf-vue3-admin/internal/controller"
 	_ "gf-vue3-admin/internal/logic"
 	_ "gf-vue3-admin/internal/packed"
 
@@ -10,5 +11,6 @@ import (
 )
 
 func main() {
+	// 运行服务
 	cmd.Main.Run(gctx.GetInitCtx())
 }

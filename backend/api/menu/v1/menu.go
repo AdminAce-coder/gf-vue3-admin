@@ -1,6 +1,10 @@
 package v1
 
-import "github.com/gogf/gf/v2/frame/g"
+import (
+	"gf-vue3-admin/internal/service/register"
+
+	"github.com/gogf/gf/v2/frame/g"
+)
 
 // 系统管理相关API
 type Parameter struct {
@@ -24,18 +28,33 @@ type CreateApiRes struct {
 }
 
 type CreateApiGroupReq struct {
-	g.Meta       `path:"/capigp" method:"post" tags:"menu" dc:"新增分组"`
-	ApiGroupName string `json:"apigroupname"`
-	Version      string `json:"version"` // 分组版本
-
+	g.Meta `path:"/capigp" method:"post" tags:"menu" dc:"新增分组"`
+	//ApiGroupName string `json:"apigroupname"`
+	//Version      string `json:"version"` // 分组版本
+	ApiPath  string                    `json:"apipath"`
+	Register register.RouteGroupConfig `json:"register"`
 }
 type CreateApiGroupRes struct {
 }
 
 // 删除API
-type DeleteApiReq struct {
-	g.Meta `path:"deleteapi" method:"delete" tags:"menu" dc:"删除API"`
+type DeleteapiReq struct {
+	g.Meta `path:"/delapi" method:"delete" tags:"menu" dc:"删除API"`
+	//apictrl.DeleteApi
+	ApiName    string `json:"apiname"`
+	ApiGroup   string `json:"apigroup"`
+	ApiVersion string `json:"apiversion"`
 }
 
-type DeleteApiRes struct {
+type DeleteapiRes struct {
+}
+
+// // 删除Api组
+type DelapigroupReq struct {
+	g.Meta    `path:"/delapigp" method:"delete" tags:"menu" dc:"删除API分组"`
+	GroupName string `json:"groupname"`
+	Version   string `json:"version"`
+}
+
+type DelapigroupRes struct {
 }
