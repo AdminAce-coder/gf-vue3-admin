@@ -39,7 +39,7 @@ var (
 						group.Middleware(middlewares...)
 						if config.GroupName != "" {
 							ctrl := register.Get(config.GroupName)
-							glog.Infof(ctx, "获取到控制器: %+v\n", ctrl)
+							glog.Infof(ctx, "获取到控制器: %+s\n", config.GroupName)
 							if ctrl != nil {
 								// 直接绑定控制器实例
 								group.Bind(ctrl)

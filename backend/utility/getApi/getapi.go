@@ -22,8 +22,10 @@ type APIPaths struct {
 }
 
 type Methods struct {
-	Get  *Endpoint `json:"get,omitempty"`
-	Post *Endpoint `json:"post,omitempty"`
+	Get    *Endpoint `json:"get,omitempty"`
+	Post   *Endpoint `json:"post,omitempty"`
+	Put    *Endpoint `json:"put,omitempty"`
+	Delete *Endpoint `json:"delete,omitempty"`
 }
 
 type Endpoint struct {
@@ -75,6 +77,23 @@ func GetapiInfo(ctx context.Context) *[]RouteInfo {
 				Tags:        methods.Post.Tags,
 			})
 		}
+		if methods.Delete != nil {
+			routes = append(routes, RouteInfo{
+				Path:        path,
+				Method:      "DELETE",
+				Description: methods.Delete.Description,
+				Tags:        methods.Delete.Tags,
+			})
+		}
+		if methods.Put != nil {
+			routes = append(routes, RouteInfo{
+				Path:        path,
+				Method:      "PUT",
+				Description: methods.Put.Description,
+				Tags:        methods.Put.Tags,
+			})
+		}
+
 	}
 
 	return &routes

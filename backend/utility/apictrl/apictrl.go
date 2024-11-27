@@ -12,12 +12,11 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/os/glog"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 type ApiCtrl struct {
@@ -27,9 +26,8 @@ type ApiCtrl struct {
 
 // 删除APi
 type DeleteApi struct {
-	ApiName    string `json:"apiname"`
-	ApiGroup   string `json:"apigroup"`
-	ApiVersion string `json:"apiversion"`
+	ApiPath  string `json:"apipath"`
+	ApiGroup string `json:"apigroup"`
 }
 type DeleteApiGroup struct {
 	ApiGroupname string `json:"apigroupname"`
@@ -37,16 +35,19 @@ type DeleteApiGroup struct {
 }
 
 func (d *DeleteApi) DeleteApi(ctx context.Context) error {
+	// 传入ApiPath= /api/v1/apitest/apidemota
+	paths := strings.Split(d.ApiPath, "/")
+	version := paths[len(paths)-3]
+	apiname := paths[len(paths)-1]
 
 	// 先删除结构体
 	apigroupath := filepath.Clean(gfile.Join(utility.GetProjectRootSmart(),
-		"api", d.ApiGroup, d.ApiVersion, d.ApiGroup+".go",
+		"api", d.ApiGroup, version, d.ApiGroup+".go",
 	))
-	// 把第一个字母转为大写
-	caser := cases.Title(language.English)
-	ApiName := caser.String(d.ApiName)
-	structsToRemove := []string{fmt.Sprintf("%sReq", ApiName), fmt.Sprintf("%sRes", ApiName)}
-
+	structsToRemove, err := FoudApiName(ctx, apigroupath, apiname)
+	if err != nil {
+		return err
+	}
 	noTypeLeft, err := removeStructs(apigroupath, structsToRemove)
 	if err != nil {
 		return err
@@ -69,23 +70,12 @@ func (d *DeleteApi) DeleteApi(ctx context.Context) error {
 
 	fmt.Println("apigroupath:", apigroupath)
 	// 再删除控制层文件
-	ctrlApiPath := filepath.Clean(gfile.Join(utility.GetProjectRootSmart(),
-		"internal", "controller",
-		d.ApiGroup,
-		fmt.Sprintf("%s_%s_%s.go", d.ApiGroup, d.ApiVersion, strings.ToLower(d.ApiName)),
-	))
-	if !gfile.Exists(ctrlApiPath) {
-		glog.New().Infof(ctx, "文件不存在: %s\n", ctrlApiPath)
-		if err = register.ExecCmd(ctx); err != nil {
-			return err
-		}
-		return nil
-	}
-	if err := file.DeleteFile(ctrlApiPath); err != nil {
+	err = DelCtrlFile(ctx, d.ApiPath, d.ApiGroup)
+	if err != nil {
 		return err
 	}
 
-	// 最后执行gf gen crtl
+	// 最执行gf gen crtl
 	if err = register.ExecCmd(ctx); err != nil {
 		return err
 	}
@@ -108,7 +98,7 @@ func removeStructs(filename string, structsToRemove []string) (bool, error) {
 
 	// 创建新的声明列表，用于存储保留的声明
 	var newDecls []ast.Decl
-	hasTypeDecl := false // 用于跟踪是否还有type声明
+	hasTypeDecl := false // 用跟踪是否还有type声明
 
 	// 遍历所有顶级声明
 	for _, decl := range node.Decls {
@@ -164,19 +154,84 @@ func removeStructs(filename string, structsToRemove []string) (bool, error) {
 
 // 删除分组
 func (d *DeleteApiGroup) DeleteGroup(ctx context.Context) error {
+
 	apigroupath := filepath.Clean(gfile.Join(utility.GetProjectRootSmart(), "api", d.ApiGroupname))
 	glog.Infof(ctx, "正在删除分组,路径：%s", apigroupath)
-	err := file.DeleteDir(apigroupath)
-	if err != nil {
+	// 删除控制层
+	apiCtrl := filepath.Clean(gfile.Join(utility.GetProjectRootSmart(), "internal", "controller", d.ApiGroupname))
+	glog.Infof(ctx, "正在删除控制层,路径：%s", apiCtrl)
+	err := file.DeleteDir(apiCtrl)
+	// 如果错误不是文件不存在
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	// 取消路由注册
-	// 拼接路径
-	routePath := fmt.Sprintf("/api/%s/%s", d.Version, d.ApiGroupname)
 
-	err = register.DeleteRouteConfig(routePath)
-	if err != nil {
+	// 删除API层
+	err = file.DeleteDir(apigroupath)
+	// 如果错误不是文件不存在
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
+
+	// 取消路由注册
+	routePath := fmt.Sprintf("/api/%s/%s", d.Version, d.ApiGroupname)
+	glog.Infof(ctx, "正在取消注册,路径：%s", routePath)
+	register.DeleteRouteConfig(routePath)
+
 	return nil
+}
+
+// 删除控制层文件
+// 传入 /api/V1/apitest
+func DelCtrlFile(ctx context.Context, path, apigourp string) error {
+	paths := strings.Split(path, "/")
+	glog.Infof(ctx, "paths,路径：%s", paths)
+	Apiname := paths[len(paths)-1]
+	glog.Infof(ctx, "groupName,路径：%s", Apiname)
+	ctrlPath := gfile.Join(utility.GetProjectRootSmart(), "internal", "controller", apigourp)
+	glog.Infof(ctx, "ctrlPath,路径：%s", ctrlPath)
+	gfile.ScanDirFunc(ctrlPath, "*.go", true, func(path string) string {
+		fileName := filepath.Base(path)
+		// 获取版本号后面的部分 (例如: 从 apitest_v1_api_demo_test.go 获取 api_demo_test)
+		parts := strings.Split(fileName, "_")
+		if len(parts) < 3 {
+			return ""
+		}
+
+		afterVersion := strings.Join(parts[2:], "")
+		afterVersion = strings.TrimSuffix(afterVersion, ".go")
+		glog.Infof(ctx, "afterVersion,路径：%s", afterVersion)
+		if strings.EqualFold(afterVersion, Apiname) {
+			glog.Infof(ctx, "正在删除控制层文件,路径：%s", path)
+			err := file.DeleteFile(path)
+			if err != nil {
+				return err.Error()
+			}
+		}
+		return ""
+	})
+	return nil
+}
+
+// 找到结构体名
+
+func FoudApiName(ctx context.Context, apigroupath, apiname string) ([]string, error) {
+	content := gfile.GetContents(apigroupath)
+	glog.Infof(ctx, "content: %s", content)
+	// 使用 (?i) 实现不区分大小写匹配
+	pattern := fmt.Sprintf(`(?i)type\s+(%s(?:req|res))\s+struct`, apiname)
+	// 加载正则
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindAllStringSubmatch(content, -1)
+	var structNames []string
+	for _, match := range matches {
+		if len(match) > 1 {
+			// 获取实际的结构体名（保持原始大小写）
+			structNames = append(structNames, match[1])
+			glog.Infof(ctx, "找到结构体: %s", match[1])
+		}
+	}
+
+	return structNames, nil
 }

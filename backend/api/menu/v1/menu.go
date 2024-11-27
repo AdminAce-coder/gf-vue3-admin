@@ -41,9 +41,9 @@ type CreateApiGroupRes struct {
 type DeleteapiReq struct {
 	g.Meta `path:"/delapi" method:"delete" tags:"menu" dc:"删除API"`
 	//apictrl.DeleteApi
-	ApiName    string `json:"apiname"`
-	ApiGroup   string `json:"apigroup"`
-	ApiVersion string `json:"apiversion"`
+	Apipath  string `json:"apipath"`
+	ApiGroup string `json:"apigroup"`
+	//ApiV string `json:"apiversion"`
 }
 
 type DeleteapiRes struct {

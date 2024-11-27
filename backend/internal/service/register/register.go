@@ -84,12 +84,12 @@ func SaveRouteConfig(newRoutes RouteItem) error {
 	// 将配置转换为 JSON
 	data, err := json.MarshalIndent(RouteGroups, "", "    ")
 	if err != nil {
-		return gerror.Newf("JSON编码失败: %w", err)
+		return gerror.Newf("JSON编码失败: %v", err)
 	}
 
 	// 写入文件
 	if err := os.WriteFile(routeConfigFile, data, 0644); err != nil {
-		return gerror.Newf("写入文件失败: %w", err)
+		return gerror.Newf("写入文件失败: %v", err)
 	}
 
 	return nil
@@ -98,13 +98,23 @@ func SaveRouteConfig(newRoutes RouteItem) error {
 
 // 取消注册路由
 func DeleteRouteConfig(routePath string) error {
+	// 先加载最新的配置
+	if err := LoadRouteConfig(); err != nil {
+		return gerror.Newf("加载配置文件失败: %v", err)
+	}
+
 	found := false
-	// 遍历查找并删除指定路由
+	newRouteGroups := make([]RouteItem, 0)
+
+	// 遍历并只保留非空的路由项
 	for _, route := range RouteGroups {
 		if _, exists := route[routePath]; exists {
 			delete(route, routePath)
 			found = true
-			break
+		}
+		// 只保留非空的map
+		if len(route) > 0 {
+			newRouteGroups = append(newRouteGroups, route)
 		}
 	}
 
@@ -112,6 +122,9 @@ func DeleteRouteConfig(routePath string) error {
 		glog.Warningf(ctx, "删除的配置不存在: %s", routePath)
 		return nil
 	}
+
+	// 更新RouteGroups
+	RouteGroups = newRouteGroups
 
 	// 重新写入配置文件
 	data, err := json.MarshalIndent(RouteGroups, "", "    ")

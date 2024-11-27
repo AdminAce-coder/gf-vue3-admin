@@ -11,4 +11,8 @@ func TestRegister(t *testing.T) {
 	//		Enable:    true,
 	//	},
 	//}
+	err := DeleteRouteConfig("/api/v1/apitest")
+	if err != nil {
+		t.Error(err)
+	}
 }

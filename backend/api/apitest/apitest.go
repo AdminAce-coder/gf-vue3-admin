@@ -11,6 +11,5 @@ import (
 )
 
 type IApitestV1 interface {
-	ApiDsdsdselete(ctx context.Context, req *v1.ApiDsdsdseleteReq) (res *v1.ApiDsdsdseleteRes, err error)
-	ApiDsdsadsvv(ctx context.Context, req *v1.ApiDsdsadsvvReq) (res *v1.ApiDsdsadsvvRes, err error)
+	ApiDemoTa(ctx context.Context, req *v1.ApiDemoTaReq) (res *v1.ApiDemoTaRes, err error)
 }

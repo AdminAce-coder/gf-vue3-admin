@@ -9,6 +9,6 @@ import (
 	"gf-vue3-admin/api/apitest/v1"
 )
 
-func (c *ControllerV1) ApiDsdsadsvv(ctx context.Context, req *v1.ApiDsdsadsvvReq) (res *v1.ApiDsdsadsvvRes, err error) {
+func (c *ControllerV1) ApiDemoTa(ctx context.Context, req *v1.ApiDemoTaReq) (res *v1.ApiDemoTaRes, err error) {
 	return nil, gerror.NewCode(gcode.CodeNotImplemented)
 }

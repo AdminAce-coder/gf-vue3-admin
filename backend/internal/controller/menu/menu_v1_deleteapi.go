@@ -8,9 +8,8 @@ import (
 
 func (c *ControllerV1) Deleteapi(ctx context.Context, req *v1.DeleteapiReq) (res *v1.DeleteapiRes, err error) {
 	apdle := apictrl.DeleteApi{
-		ApiGroup:   req.ApiGroup,
-		ApiVersion: req.ApiVersion,
-		ApiName:    req.ApiName,
+		ApiGroup: req.ApiGroup,
+		ApiPath:  req.Apipath,
 	}
 	err = apdle.DeleteApi(ctx)
 	if err != nil {
