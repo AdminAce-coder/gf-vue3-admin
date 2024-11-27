@@ -8,15 +8,15 @@ const routes: RouteRecordRaw[] = [
     component: BasicLayout,
     meta: {
       icon: 'lucide:layout-dashboard',
-      order: -1,
+      order: 2,
       title: "系统管理",
     },
     name: 'Management',
-    path: '/',
+    path: '/management',
     children: [
       {
         name: 'Rolemt',
-        path: '/rolemt',
+        path: 'rolemt',
         component: () => import('#/views/management/rolemt/index.vue'),
         meta: {
           affixTab: true,
@@ -26,7 +26,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         name: 'Usermt',
-        path: '/usermt',
+        path: 'usermt',
         component: () => import('#/views/management/usermt/index.vue'),
         meta: {
           icon: 'carbon:workspace',
@@ -35,7 +35,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         name: 'Apimt',
-        path: '/apimt',
+        path: 'apimt',
         component: () => import('#/views/management/apimt/index.vue'),
         meta: {
           icon: 'carbon:workspace',

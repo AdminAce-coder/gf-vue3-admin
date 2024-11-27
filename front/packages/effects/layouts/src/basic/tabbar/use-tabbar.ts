@@ -79,14 +79,14 @@ export function useTabbar() {
     await closeTabByKey(key);
   };
 
-  function wrapperTabLocale(tab: RouteLocationNormalizedGeneric) {
+  const wrapperTabLocale = (tab: TabItem) => {
+    if (!tab) return {}
+    
     return {
       ...tab,
-      meta: {
-        ...tab?.meta,
-        title: $t(tab?.meta?.title as string),
-      },
-    };
+      title: tab.title ? t(tab.title) : '',
+      // 如果有其他需要本地化的字段，也在这里处理
+    }
   }
 
   watch(
