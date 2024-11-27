@@ -14,6 +14,11 @@
           </el-dropdown-menu>
         </template>
       </el-dropdown>
+      
+      <el-button type="danger" @click="deleteGroupDrawer.visible = true" style="margin-left: 10px">
+        <el-icon><Delete /></el-icon>
+        删除分组
+      </el-button>
     </div>
 
     <div class="table-container">
@@ -195,7 +200,7 @@
         <el-form-item label="API路径" required>
           <el-input v-model="groupFormData.apipath" placeholder="请输入API路径，例如: /api/v1/apitest" />
         </el-form-item>
-        <el-form-item label="分组名称" required>
+        <el-form-item label="分组名���" required>
           <el-input v-model="groupFormData.register.groupname" placeholder="请输入分组名称" />
         </el-form-item>
         <el-form-item label="是否鉴权">
@@ -215,6 +220,36 @@
         <el-form-item>
           <el-button type="primary" @click="submitGroupForm">确认</el-button>
           <el-button @click="groupDrawer.visible = false">取消</el-button>
+        </el-form-item>
+      </el-form>
+    </el-drawer>
+
+    <el-drawer
+      v-model="deleteGroupDrawer.visible"
+      :title="deleteGroupDrawer.title"
+      size="500px"
+    >
+      <el-form :model="deleteGroupFormData" label-width="100px">
+        <el-form-item label="分组名称" required>
+          <el-select
+            v-model="deleteGroupFormData.groupname"
+            placeholder="请选择要删除的分组"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="tag in existingTags"
+              :key="tag"
+              :label="tag"
+              :value="tag"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="API版本" required>
+          <el-input v-model="deleteGroupFormData.version" placeholder="请输入API版本，例如：v1" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="danger" @click="submitDeleteGroup">确认删除</el-button>
+          <el-button @click="deleteGroupDrawer.visible = false">取消</el-button>
         </el-form-item>
       </el-form>
     </el-drawer>
@@ -323,6 +358,12 @@ const handleAddCommand = (command: string) => {
         groupname: '',
         enable: true
       }
+    }
+  } else if (command === 'deleteGroup') {
+    deleteGroupDrawer.value.visible = true
+    deleteGroupFormData.value = {
+      groupname: '',
+      version: ''
     }
   }
 }
@@ -467,6 +508,47 @@ const methodOptions = [
   { label: 'PUT-更新', value: 'PUT' },
   { label: 'DELETE-删除', value: 'DELETE' }
 ]
+
+// 添加删除分组的响应式数据
+const deleteGroupDrawer = ref({
+  visible: false,
+  title: '删除API分组'
+})
+
+const deleteGroupFormData = ref({
+  groupname: '',
+  version: ''
+})
+
+// 添加删除分组的提交方法
+const submitDeleteGroup = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除分组 "${deleteGroupFormData.value.groupname}" 吗？此操作不可恢复！`,
+      '警告',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+
+    await deleteApiGroup(deleteGroupFormData.value)
+    ElMessage({
+      type: 'success',
+      message: '分组删除成功',
+    })
+    deleteGroupDrawer.value.visible = false
+    await loadApiInfo() // 重新加载数据
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage({
+        type: 'error',
+        message: error.message || '删除分组失败',
+      })
+    }
+  }
+}
 </script>
 
 <style lang="scss" scoped>
