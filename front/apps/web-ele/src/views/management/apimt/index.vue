@@ -200,7 +200,7 @@
         <el-form-item label="API路径" required>
           <el-input v-model="groupFormData.apipath" placeholder="请输入API路径，例如: /api/v1/apitest" />
         </el-form-item>
-        <el-form-item label="分组名���" required>
+        <el-form-item label="分组名称" required>
           <el-input v-model="groupFormData.register.groupname" placeholder="请输入分组名称" />
         </el-form-item>
         <el-form-item label="是否鉴权">
