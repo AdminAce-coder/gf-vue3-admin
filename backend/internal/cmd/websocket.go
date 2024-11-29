@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync/atomic"
@@ -10,7 +11,7 @@ import (
 
 var idCounter atomic.Int64 // 用于生成唯一的ID
 
-func SrartWebsoket() {
+func StartWebsocket() {
 	m := melody.New()
 
 	// 配置消息大小限制
@@ -47,12 +48,37 @@ func SrartWebsoket() {
 	})
 
 	m.HandleMessage(func(s *melody.Session, msg []byte) {
-		if id, ok := s.Get("id"); ok {
-			m.BroadcastOthers([]byte(fmt.Sprintf("set %d %s", id, msg)), s)
+		fmt.Printf("收到消息: %s\n", string(msg))
+
+		var message struct {
+			Type string      `json:"type"`
+			Data interface{} `json:"data"`
+		}
+
+		if err := json.Unmarshal(msg, &message); err != nil {
+			fmt.Printf("解析消息失败: %v\n", err)
+			s.Write([]byte(fmt.Sprintf("错误: 无效的消息格式")))
+			return
+		}
+
+		switch message.Type {
+		case "connect":
+			fmt.Printf("收到连接请求: %+v\n", message.Data)
+			// 处理连接请求
+		case "input":
+			fmt.Printf("收到输入: %+v\n", message.Data)
+			// 处理输入
+		default:
+			fmt.Printf("未知消息类型: %s\n", message.Type)
+		}
+
+		if _, ok := s.Get("id"); ok {
+			m.BroadcastOthers(msg, s)
 		}
 	})
 
-	http.ListenAndServe(":6000", nil)
-	// 启动
-	fmt.Printf("已启动websocker服务端..6000")
+	fmt.Printf("WebSocket服务启动在 :6000 端口...\n")
+	if err := http.ListenAndServe(":6000", nil); err != nil {
+		fmt.Printf("服务启动失败: %v\n", err)
+	}
 }

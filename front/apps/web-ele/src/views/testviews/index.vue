@@ -31,6 +31,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
+import { ElMessage } from 'element-plus'
 
 const terminalRef = ref(null)
 const showTerminal = ref(false)
@@ -71,6 +72,11 @@ const initTerminal = () => {
 
 // 连接SSH
 const connectSSH = () => {
+  if (!sshForm.value.host || !sshForm.value.username || !sshForm.value.password) {
+    ElMessage.error('请填写完整的连接信息')
+    return
+  }
+
   showTerminal.value = true
 
   // 延迟一帧等待 DOM 更新
@@ -79,36 +85,58 @@ const connectSSH = () => {
       initTerminal()
     }
 
-    // 连接WebSocket
-    ws = new WebSocket(`ws://1.92.75.225:6000/ws`)
-
-    ws.onopen = () => {
-      // 发送连接信息
-      ws.send(JSON.stringify({
-        type: 'connect',
-        data: {
-          host: sshForm.value.host,
-          port: parseInt(sshForm.value.port),
-          username: sshForm.value.username,
-          password: sshForm.value.password
-        }
-      }))
+    // 关闭已存在的连接
+    if (ws) {
+      ws.close()
+      ws = null
     }
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      if (data.type === 'terminal') {
-        terminal.write(data.data)
+    try {
+      // 使用完整的URL，确保协议正确
+      const wsUrl = `ws://1.92.75.225:6000/ws`
+      ws = new WebSocket(wsUrl)
+
+      ws.onopen = () => {
+        terminal.write('正在连接到服务器...\r\n')
+        // 发送连接信息
+        ws.send(JSON.stringify({
+          type: 'connect',
+          data: {
+            host: sshForm.value.host,
+            port: parseInt(sshForm.value.port),
+            username: sshForm.value.username,
+            password: sshForm.value.password
+          }
+        }))
       }
-    }
 
-    ws.onerror = (error) => {
-      console.error('WebSocket错误:', error)
-      terminal.write('\r\n连接错误！\r\n')
-    }
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'terminal') {
+            terminal.write(data.data)
+          } else if (data.type === 'error') {
+            terminal.write(`\r\n错误: ${data.message}\r\n`)
+          }
+        } catch (e) {
+          console.error('解析消息错误:', e)
+          terminal.write('\r\n消息解析错误\r\n')
+        }
+      }
 
-    ws.onclose = () => {
-      terminal.write('\r\n连接已关闭\r\n')
+      ws.onerror = (error) => {
+        console.error('WebSocket错误:', error)
+        terminal.write('\r\n连接错误！请检查服务器地址和网络连接。\r\n')
+        ElMessage.error('WebSocket连接失败')
+      }
+
+      ws.onclose = () => {
+        terminal.write('\r\n连接已关闭\r\n')
+      }
+    } catch (error) {
+      console.error('创建WebSocket失败:', error)
+      terminal.write('\r\n创建连接失败！\r\n')
+      ElMessage.error('创建WebSocket连接失败')
     }
   }, 0)
 }
