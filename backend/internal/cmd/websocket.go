@@ -13,6 +13,10 @@ var idCounter atomic.Int64 // 用于生成唯一的ID
 func SrartWebsoket() {
 	m := melody.New()
 
+	// 配置消息大小限制
+	m.Config.MaxMessageSize = 1024 * 1024 * 10 // 10MB
+	m.Config.MessageBufferSize = 1024 * 1024   // 1MB
+
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		m.HandleRequest(w, r)
 	})
