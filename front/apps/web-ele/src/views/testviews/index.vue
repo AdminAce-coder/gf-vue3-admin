@@ -92,22 +92,12 @@ const connectSSH = () => {
     }
 
     try {
-      // 使用完整的URL，确保协议正确
       const wsUrl = `ws://1.92.75.225:6000/ws`
       ws = new WebSocket(wsUrl)
 
       ws.onopen = () => {
-        terminal.write('正在连接到服务器...\r\n')
-        // 发送连接信息
-        ws.send(JSON.stringify({
-          type: 'connect',
-          data: {
-            host: sshForm.value.host,
-            port: parseInt(sshForm.value.port),
-            username: sshForm.value.username,
-            password: sshForm.value.password
-          }
-        }))
+        console.log('WebSocket连接成功')
+        terminal.write('连接成功！\r\n')
       }
 
       ws.onmessage = (event) => {
@@ -126,8 +116,13 @@ const connectSSH = () => {
 
       ws.onerror = (error) => {
         console.error('WebSocket错误:', error)
-        terminal.write('\r\n连接错误！请检查服务器地址和网络连接。\r\n')
-        ElMessage.error('WebSocket连接失败')
+        terminal.write('\r\n连接错误！\r\n')
+        terminal.write('正在尝试重新连接...\r\n')
+
+        // 3秒后尝试重新连接
+        setTimeout(() => {
+          connectSSH()
+        }, 3000)
       }
 
       ws.onclose = () => {

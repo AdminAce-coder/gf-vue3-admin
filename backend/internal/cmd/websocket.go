@@ -19,9 +19,11 @@ func StartWebsocket() {
 	m.Config.MessageBufferSize = 1024 * 1024   // 1MB
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		// 添加必要的WebSocket头信息
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Sec-WebSocket-Protocol")
+		// 允许所有来源的请求
+		origin := r.Header.Get("Origin")
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 
 		// 处理预检请求
@@ -30,12 +32,7 @@ func StartWebsocket() {
 			return
 		}
 
-		// 检查是否是WebSocket升级请求
-		if r.Header.Get("Upgrade") != "websocket" {
-			http.Error(w, "Expected WebSocket Upgrade", http.StatusBadRequest)
-			return
-		}
-
+		fmt.Printf("收到新的WebSocket连接请求，Origin: %s\n", origin)
 		err := m.HandleRequest(w, r)
 		if err != nil {
 			fmt.Printf("WebSocket处理错误: %v\n", err)
@@ -43,12 +40,11 @@ func StartWebsocket() {
 		}
 	})
 
+	// 添加连接成功的处理
 	m.HandleConnect(func(s *melody.Session) {
-		id := idCounter.Add(1) //这是
-
-		s.Set("id", id)
-
-		s.Write([]byte(fmt.Sprintf("iam %d", id)))
+		fmt.Printf("新的WebSocket连接已建立\n")
+		// 发送欢迎消息
+		s.Write([]byte(fmt.Sprintf("连接成功")))
 	})
 
 	m.HandleDisconnect(func(s *melody.Session) {
@@ -88,7 +84,7 @@ func StartWebsocket() {
 	})
 
 	fmt.Printf("WebSocket服务器启动在 :6000 端口...\n")
-	if err := http.ListenAndServe("0.0.0.0:6000", nil); err != nil {
+	if err := http.ListenAndServe(":6000", nil); err != nil {
 		fmt.Printf("服务器启动失败: %v\n", err)
 	}
 }
