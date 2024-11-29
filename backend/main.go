@@ -1,6 +1,7 @@
 package main
 
 import (
+	cmd2 "gf-vue3-admin/cmd"
 	"gf-vue3-admin/internal/cmd"
 	_ "gf-vue3-admin/internal/controller"
 	_ "gf-vue3-admin/internal/logic"
@@ -13,4 +14,6 @@ import (
 func main() {
 	// 运行服务
 	cmd.Main.Run(gctx.GetInitCtx())
+	// 允许命令行
+	cmd2.Execute()
 }

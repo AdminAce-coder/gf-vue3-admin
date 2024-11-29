@@ -19,6 +19,7 @@ var (
 		Brief: "start http server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) (err error) {
 			s := g.Server()
+
 			// 动态生成路由组
 			for _, route := range register.RouteGroups {
 				for path, config := range route {
@@ -50,8 +51,11 @@ var (
 					})
 				}
 			}
-			s.SetPort(5321)
+			go s.SetPort(5321)
+			// 启动websocket
+			go SrartWebsoket()
 			s.Run()
+
 			return nil
 		},
 	}
