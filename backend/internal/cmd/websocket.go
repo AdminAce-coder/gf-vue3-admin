@@ -39,5 +39,5 @@ func SrartWebsoket() {
 
 	http.ListenAndServe(":6000", nil)
 	// 启动
-	fmt.Printf("已启动websocker服务端..")
+	fmt.Printf("已启动websocker服务端..6000")
 }
