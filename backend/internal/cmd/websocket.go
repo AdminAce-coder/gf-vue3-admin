@@ -19,18 +19,28 @@ func StartWebsocket() {
 	m.Config.MessageBufferSize = 1024 * 1024   // 1MB
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		// 添加CORS头信息
+		// 添加必要的WebSocket头信息
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Sec-WebSocket-Protocol")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-		// 处理 OPTIONS 预检请求
+		// 处理预检请求
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		m.HandleRequest(w, r)
+		// 检查是否是WebSocket升级请求
+		if r.Header.Get("Upgrade") != "websocket" {
+			http.Error(w, "Expected WebSocket Upgrade", http.StatusBadRequest)
+			return
+		}
+
+		err := m.HandleRequest(w, r)
+		if err != nil {
+			fmt.Printf("WebSocket处理错误: %v\n", err)
+			return
+		}
 	})
 
 	m.HandleConnect(func(s *melody.Session) {
@@ -77,8 +87,8 @@ func StartWebsocket() {
 		}
 	})
 
-	fmt.Printf("WebSocket服务启动在 :6000 端口...\n")
+	fmt.Printf("WebSocket服务器启动在 :6000 端口...\n")
 	if err := http.ListenAndServe(":6000", nil); err != nil {
-		fmt.Printf("服务启动失败: %v\n", err)
+		fmt.Printf("服务器启动失败: %v\n", err)
 	}
 }
