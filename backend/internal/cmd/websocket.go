@@ -88,7 +88,7 @@ func StartWebsocket() {
 	})
 
 	fmt.Printf("WebSocket服务器启动在 :6000 端口...\n")
-	if err := http.ListenAndServe(":6000", nil); err != nil {
+	if err := http.ListenAndServe("0.0.0.0:6000", nil); err != nil {
 		fmt.Printf("服务器启动失败: %v\n", err)
 	}
 }
