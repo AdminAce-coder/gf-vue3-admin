@@ -18,6 +18,17 @@ func SrartWebsoket() {
 	m.Config.MessageBufferSize = 1024 * 1024   // 1MB
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		// 添加CORS头信息
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		// 处理 OPTIONS 预检请求
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		m.HandleRequest(w, r)
 	})
 

@@ -80,7 +80,7 @@ const connectSSH = () => {
     }
 
     // 连接WebSocket
-    ws = new WebSocket(`ws://your-backend-url/ssh`)
+    ws = new WebSocket(`ws://1.92.75.225:6000/ws`)
 
     ws.onopen = () => {
       // 发送连接信息
