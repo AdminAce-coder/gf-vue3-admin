@@ -13,13 +13,15 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.42.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.69.0
 	github.com/duke-git/lancet/v2 v2.3.3
+	github.com/gogf/gf v1.16.9
 	github.com/gogf/gf/contrib/drivers/mysql/v2 v2.8.0
 	github.com/gogf/gf/v2 v2.8.0
 	github.com/golang-jwt/jwt/v4 v4.5.1
-	github.com/olahol/melody v1.2.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/zeromicro/go-zero v1.7.4
+	golang.org/x/crypto v0.29.0
 )
 
 require (
@@ -65,7 +67,6 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

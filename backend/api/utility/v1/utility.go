@@ -14,3 +14,17 @@ type Utility_Create_OssReq struct {
 
 type Utility_Create_OssRes struct {
 }
+
+// 创建SSH连接
+type SshInfoReq struct {
+	g.Meta `path:"/sshinfo" method:"post" tags:"utility" dc:"创建SSH连接"`
+	// 用户
+	User string `v:"required" dc:"用户"`
+	// 密码
+	Password string `v:"required" dc:"密码"`
+	Addr     string `v:"required" dc:""`
+	Port     int    `v:"required" dc:""`
+}
+
+type SshInfoRes struct {
+}

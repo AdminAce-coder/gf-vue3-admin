@@ -46,6 +46,9 @@ const sshForm = ref({
   password: ''
 })
 
+// 添加一个变量来存储当前输入的内容
+let currentLine = ''
+
 // 初始化终端
 const initTerminal = () => {
   terminal = new Terminal({
@@ -62,10 +65,27 @@ const initTerminal = () => {
   terminal.open(terminalRef.value)
   fitAddon.fit()
 
+  // 添加提示符
+  terminal.write('\r\n$ ')
+
   // 处理终端输入
   terminal.onData(data => {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'input', data }))
+      // 显示用户输入
+      terminal.write(data)
+
+      // 如果是回车键，发送消息并添加新的提示符
+      if (data === '\r') {
+        ws.send(JSON.stringify({
+          type: 'message',
+          data: currentLine
+        }))
+        currentLine = '' // 清空当前行
+        terminal.write('\n$ ')
+      } else {
+        // 收集用户输入
+        currentLine += data
+      }
     }
   })
 }
@@ -92,22 +112,24 @@ const connectSSH = () => {
     }
 
     try {
-      const wsUrl = `ws://1.92.75.225:6000/ws`
+      const wsUrl = `ws://1.92.75.225:8443/ws `
       ws = new WebSocket(wsUrl)
 
       ws.onopen = () => {
         console.log('WebSocket连接成功')
-        terminal.write('连接成功！\r\n')
+        terminal.write('WebSocket连接成功...\r\n')
+        // 发送测试消息
+        ws.send(JSON.stringify({
+          type: 'test',
+          data: 'Hello WebSocket Server!'
+        }))
       }
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          if (data.type === 'terminal') {
-            terminal.write(data.data)
-          } else if (data.type === 'error') {
-            terminal.write(`\r\n错误: ${data.message}\r\n`)
-          }
+          // 直接显示收到的消息
+          terminal.write(`\r\n收到服务器消息: ${JSON.stringify(data)}\r\n`)
         } catch (e) {
           console.error('解析消息错误:', e)
           terminal.write('\r\n消息解析错误\r\n')

@@ -8,4 +8,5 @@ import (
 	_ "gf-vue3-admin/internal/logic/auth"
 	_ "gf-vue3-admin/internal/logic/login"
 	_ "gf-vue3-admin/internal/logic/middleware"
+	_ "gf-vue3-admin/internal/logic/utility"
 )

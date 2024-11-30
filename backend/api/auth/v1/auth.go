@@ -4,10 +4,10 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // 登录
 type LoginReq struct {
-	g.Meta        `path:"/login" method:"post" tags:"login" dc:"登录接口"`
-	SelectAccount string `v:"required" json:"selectAccount" dc:"用户组"  `
-	Username      string `v:"required" json:"username" dc:"用户名"  `
-	Password      string `v:"required" json:"password"  dc:"密码 " `
+	g.Meta `path:"/login" method:"post" tags:"login" dc:"登录接口"`
+	//SelectAccount string `v:"required" json:"selectAccount" dc:"用户组"  `
+	Username string `v:"required" json:"username" dc:"用户名"  `
+	Password string `v:"required" json:"password"  dc:"密码 " `
 }
 type LoginRes struct {
 	AccessToken string `json:"accessToken" dc:"返回token"`

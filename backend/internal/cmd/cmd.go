@@ -4,6 +4,7 @@ import (
 	"context"
 	"gf-vue3-admin/internal/service"
 	"gf-vue3-admin/internal/service/register"
+	"gf-vue3-admin/utility/terminal"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -53,7 +54,7 @@ var (
 			}
 			go s.SetPort(5321)
 			// 启动websocket
-			go StartwebScoket()
+			go terminal.StartwebScoket()
 			s.Run()
 
 			return nil
