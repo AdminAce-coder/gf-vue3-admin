@@ -53,7 +53,7 @@ var (
 			}
 			go s.SetPort(5321)
 			// 启动websocket
-			go StartWebsocket()
+			go StartwebScoket()
 			s.Run()
 
 			return nil
