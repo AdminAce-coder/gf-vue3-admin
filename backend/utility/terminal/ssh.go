@@ -89,7 +89,6 @@ func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
 		gossh.IXON:          0,     // 禁用XON/XOFF流控
 		gossh.IXOFF:         0,     // 禁用XON/XOFF流控
 		gossh.IXANY:         0,     // 禁用任意字符重启输出
-		gossh.BRKINT:        0,     // 禁用BREAK中断
 		gossh.IGNPAR:        0,     // 禁用忽略奇偶校验错误
 		gossh.PARMRK:        0,     // 禁用标记奇偶校验错误
 		gossh.INPCK:         0,     // 禁用输入奇偶校验
