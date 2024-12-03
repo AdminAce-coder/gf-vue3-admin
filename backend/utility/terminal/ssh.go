@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"gf-vue3-admin/internal/model/utiliy"
-	"github.com/gogf/gf/v2/os/glog"
-	gossh "golang.org/x/crypto/ssh"
 	"io"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gogf/gf/v2/os/glog"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 type Sshconfig struct {
@@ -39,6 +40,9 @@ func (s *Sshconfig) NewSshConfig(ctx context.Context) (*Sshconfig, error) {
 	client, err := gossh.Dial(proto, s.Userinfo.Addr, config) // 连接到 SSH 服务器
 	if nil != err {
 		return s, err
+	}
+	if s.Client == nil {
+		glog.Infof(ctx, "client 为空")
 	}
 	s.Client = client
 	return s, nil

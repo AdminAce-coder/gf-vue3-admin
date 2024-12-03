@@ -27,7 +27,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	ctx := gctx.New()
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println("WebSocket Upgrade Error:", err)
+		glog.Error(ctx, "WebSocket升级失败:", err)
 		return
 	}
 	defer conn.Close()
@@ -35,15 +35,17 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	ssh := Sshconfig{
 		Userinfo: utiliy.SshUser,
 	}
-	sshcilet, err := ssh.NewSshConfig(ctx)
+	sshClient, err := ssh.NewSshConfig(ctx)
 	if err != nil {
-		glog.Error("sshcilet")
+		glog.Error(ctx, "SSH客户端配置失败:", err)
+		return
 	}
-	SshConn, err := sshcilet.NewSshConn(2048, 2048)
+	sshConn, err := sshClient.NewSshConn(2048, 2048)
 	if err != nil {
-		glog.Error("创建SshConn失败")
+		glog.Error(ctx, "创建SSH连接失败:", err)
+		return
 	}
-	SshWsSession := NewSshWsSession(SshConn, conn)
+	SshWsSession := NewSshWsSession(sshConn, conn)
 	done := make(chan bool)
 	SshWsSession.Start(done)
 
