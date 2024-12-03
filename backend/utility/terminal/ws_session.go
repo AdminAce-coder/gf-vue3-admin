@@ -20,7 +20,7 @@ type WsMsg struct {
 // LogicSshWsSession 是逻辑 SSH WebSocket 会话的结构体
 type SshWsSession struct {
 	//stdinPipe io.WriteCloser  // 标准输入管道
-	//session *ssh.Session    // SSH 会话
+	//session *ssh.Session    // SSH 会话特
 	wsConn *websocket.Conn // WebSocket 连接
 	sshcon *SshConn
 }
