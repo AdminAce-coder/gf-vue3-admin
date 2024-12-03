@@ -49,7 +49,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	done := make(chan bool)
 	SshWsSession.Start(done)
 
-	fmt.Println("SshWsSession 启动")
+	fmt.Println("SshWsSession 启动了")
 
 	// 简单的消息循环：读取消息并回显给客户端
 	for {
