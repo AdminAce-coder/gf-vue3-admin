@@ -1,8 +1,10 @@
 package terminal
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/os/gctx"
@@ -44,7 +46,6 @@ func (s *SshWsSession) Start(quitchan chan bool) {
 // 接收WebSocket 消息
 
 func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
-	// 解析消息
 	ctx := gctx.New()
 	wscon := s.wsConn
 	for {
@@ -61,11 +62,18 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 			rmgs := WsMsg{}
 			if err := json.Unmarshal(data, &rmgs); err != nil {
 				glog.Error(ctx, "解析消息失败:", err)
-				continue // 解析失败继续下一条消息
+				continue
 			}
-			glog.Infof(ctx, "发送的命令是：%s", rmgs.Data)
-			// 将字符串转换为字节切片
-			byteMsg := []byte(rmgs.Data + "\n") // 添加换行符
+
+			// 过滤空命令
+			command := strings.TrimSpace(rmgs.Data)
+			if command == "" {
+				continue
+			}
+
+			glog.Infof(ctx, "发送的命令是：%s", command)
+			// 将字符串转换为字节切片，确保命令以换行符结束
+			byteMsg := []byte(command + "\n")
 			if err := s.SendmgsToPipe(byteMsg); err != nil {
 				glog.Error(ctx, "发送命令到SSH管道失败:", err)
 				continue
@@ -83,10 +91,13 @@ func (s *SshWsSession) SendmgsToPipe(cmdBytes []byte) error {
 
 // 发送 WebSocket 消息
 func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
+	ctx := gctx.New()
 	wscon := s.wsConn
-	// 创建一个定时器
-	ticker := time.NewTicker(time.Millisecond * time.Duration(60))
+	// 创建一个定时器，减少检查间隔以提高响应速度
+	ticker := time.NewTicker(time.Millisecond * time.Duration(30))
 	defer ticker.Stop()
+
+	var buffer bytes.Buffer
 	for {
 		select {
 		case <-ticker.C:
@@ -96,20 +107,30 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 			// 获取输入
 			input := s.sshcon.ComboOutput.Bytes()
 			if len(input) > 0 {
-				wsdata, err := json.Marshal(WsMsg{
-					Type: "cmd",
-					Data: string(input),
-				})
-				if err != nil {
-					fmt.Println("获取数据失败", err.Error())
-					continue
+				// 将新数据追加到缓冲区
+				buffer.Write(input)
+
+				// 检查是否有完整的输出行
+				if bytes.Contains(input, []byte{'\n'}) || len(buffer.Bytes()) > 1024 {
+					output := buffer.String()
+					wsdata, err := json.Marshal(WsMsg{
+						Type: "cmd",
+						Data: output,
+					})
+					if err != nil {
+						glog.Error(ctx, "序列化消息失败:", err)
+						continue
+					}
+
+					// 发送数据
+					if err = wscon.WriteMessage(websocket.TextMessage, wsdata); err != nil {
+						glog.Error(ctx, "发送数据失败:", err)
+					}
+
+					// 清空缓冲区
+					buffer.Reset()
+					s.sshcon.ComboOutput.Buffer.Reset()
 				}
-				// 将组合输出发送回 WebSocket
-				err = wscon.WriteMessage(websocket.TextMessage, wsdata)
-				if err != nil {
-					fmt.Println("发送数据失败", err.Error())
-				}
-				s.sshcon.ComboOutput.Buffer.Reset() // 重置组合输出缓冲区
 			}
 		case <-exitCh:
 			return

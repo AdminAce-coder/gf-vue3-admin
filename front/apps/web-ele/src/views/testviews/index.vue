@@ -46,8 +46,8 @@ const sshForm = ref({
   password: ''
 })
 
-// 添加一个变量来存储当前输入的内容
-let currentLine = ''
+// 添加连接状态变量
+const isConnected = ref(false)
 
 // 初始化终端
 const initTerminal = () => {
@@ -56,7 +56,10 @@ const initTerminal = () => {
     fontSize: 14,
     theme: {
       background: '#1e1e1e'
-    }
+    },
+    convertEol: true,
+    cols: 100,
+    rows: 24
   })
 
   fitAddon = new FitAddon()
@@ -65,29 +68,97 @@ const initTerminal = () => {
   terminal.open(terminalRef.value)
   fitAddon.fit()
 
-  // 添加提示符
   terminal.write('\r\n$ ')
 
-  // 处理终端输入
-  terminal.onData(data => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      // 显示用户输入
-      terminal.write(data)
+  let commandBuffer = ''
+  let isProcessingCommand = false
 
-      // 如果是回车键，发送消息并添加新的提示符
-      if (data === '\r') {
+  terminal.onData(data => {
+    if (!isConnected.value) {
+      terminal.write('\r\nWebSocket未连接，请等待连接成功...\r\n$ ')
+      return
+    }
+
+    if (data === '\r') {
+      isProcessingCommand = true
+      const command = commandBuffer.trim()
+      if (command) {
+        console.log('Sending command:', command)
         ws.send(JSON.stringify({
           type: 'message',
-          data: currentLine
+          data: command
         }))
-        currentLine = '' // 清空当前行
-        terminal.write('\n$ ')
-      } else {
-        // 收集用户输入
-        currentLine += data
       }
+      commandBuffer = ''
+      terminal.write('\r\n')
+      isProcessingCommand = false
+    } else if (data === '\u007f') { 
+      if (commandBuffer.length > 0) {
+        commandBuffer = commandBuffer.slice(0, -1)
+        terminal.write('\b \b')
+      }
+    } else if (!isProcessingCommand && data >= ' ') { 
+      commandBuffer += data
+      terminal.write(data)
     }
   })
+}
+
+// 连接WebSocket
+const connectWebSocket = () => {
+  const wsUrl = 'ws://1.92.75.225:9443/ws'
+  ws = new WebSocket(wsUrl)
+
+  ws.onopen = () => {
+    console.log('WebSocket连接成功')
+    isConnected.value = true
+    terminal.write('WebSocket连接成功...\r\n$ ')
+  }
+
+  ws.onclose = () => {
+    console.log('WebSocket连接关闭')
+    isConnected.value = false
+    terminal.write('\r\nWebSocket连接已断开，正在尝试重新连接...\r\n')
+    setTimeout(connectWebSocket, 3000)
+  }
+
+  ws.onerror = (error) => {
+    console.error('WebSocket错误:', error)
+    isConnected.value = false
+  }
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      switch(data.type) {
+        case 'test':
+          terminal.write(`${data.data}`)
+          if (!data.data.endsWith('\n')) {
+            terminal.write('\r\n')
+          }
+          terminal.write('$ ')
+          break
+        case 'cmd':
+          const output = data.data.toString()
+          const cleanOutput = output.replace(/\n+$/, '')
+          terminal.write(cleanOutput)
+          if (!cleanOutput.endsWith('\n')) {
+            terminal.write('\r\n')
+          }
+          terminal.write('$ ')
+          break
+        default:
+          terminal.write(data.data)
+          if (!data.data.endsWith('\n')) {
+            terminal.write('\r\n')
+          }
+          terminal.write('$ ')
+      }
+    } catch (e) {
+      console.error('解析消息错误:', e)
+      terminal.write('\r\n消息解析错误\r\n$ ')
+    }
+  }
 }
 
 // 连接SSH
@@ -99,74 +170,18 @@ const connectSSH = () => {
 
   showTerminal.value = true
 
-  // 延迟一帧等待 DOM 更新
   setTimeout(() => {
     if (!terminal) {
       initTerminal()
     }
 
-    // 关闭已存在的连接
     if (ws) {
       ws.close()
       ws = null
     }
 
-    try {
-      const wsUrl = `ws://1.92.75.225:9443/ws `
-      ws = new WebSocket(wsUrl)
-
-      ws.onopen = () => {
-        console.log('WebSocket连接成功')
-        terminal.write('WebSocket连接成功...\r\n')
-        // 发送测试消息
-        ws.send(JSON.stringify({
-          type: 'test',
-          data: 'Hello WebSocket Server!'
-        }))
-      }
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          // 根据消息类型处理
-          switch(data.type) {
-            case 'test':
-              // 测试消息可以简单显示
-              terminal.write(`\r\n${data.data}\r\n`)
-              break
-            case 'cmd':
-              // 命令输出直接写入，不需要显示json格式
-              terminal.write(data.data)
-              break
-            default:
-              terminal.write(`\r\n${data.data}\r\n`)
-          }
-        } catch (e) {
-          console.error('解析消息错误:', e)
-          terminal.write('\r\n消息解析错误\r\n')
-        }
-      }
-
-      ws.onerror = (error) => {
-        console.error('WebSocket错误:', error)
-        terminal.write('\r\n连接错误！\r\n')
-        terminal.write('正在尝试重新连接...\r\n')
-
-        // 3秒后尝试重新连接
-        setTimeout(() => {
-          connectSSH()
-        }, 3000)
-      }
-
-      ws.onclose = () => {
-        terminal.write('\r\n连接已关闭\r\n')
-      }
-    } catch (error) {
-      console.error('创建WebSocket失败:', error)
-      terminal.write('\r\n创建连接失败！\r\n')
-      ElMessage.error('创建WebSocket连接失败')
-    }
-  }, 0)
+    connectWebSocket()
+  })
 }
 
 // 清理资源
