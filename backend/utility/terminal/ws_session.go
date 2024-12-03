@@ -17,8 +17,9 @@ import (
 type WsMsg struct {
 	Type string `json:"type"`
 	Data string `json:"data,omitempty"` // WsMsgCmd
-	//Cols      int    `json:"cols,omitempty"`      // WsMsgResize
-	//Rows      int    `json:"rows,omitempty"`      // WsMsgResize
+	Cols int    `json:"cols,omitempty"` // WsMsgResize
+	Rows int    `json:"rows,omitempty"` // WsMsgResize
+	Key  string `json:"key,omitempty"`  // 键盘事件
 	//Timestamp int `json:"timestamp,omitempty"` // WsMsgHeartbeat
 }
 
@@ -63,6 +64,18 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 			if err := json.Unmarshal(data, &rmgs); err != nil {
 				glog.Error(ctx, "解析消息失败:", err)
 				continue
+			}
+
+			// 处理特殊键
+			if rmgs.Type == "key" {
+				switch rmgs.Key {
+				case "ctrl+c":
+					// 发送中断信号 (ASCII 0x03 = Ctrl+C)
+					if err := s.SendmgsToPipe([]byte{0x03}); err != nil {
+						glog.Error(ctx, "发送中断信号失败:", err)
+					}
+					continue
+				}
 			}
 
 			// 过滤空命令

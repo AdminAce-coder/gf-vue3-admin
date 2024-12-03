@@ -58,8 +58,11 @@ const initTerminal = () => {
       background: '#1e1e1e'
     },
     convertEol: true,
-    cols: 100,
-    rows: 24
+    cols: 120,
+    rows: 30,
+    cursorStyle: 'block',    // 添加光标样式
+    fontFamily: 'Consolas, "Courier New", monospace',  // 使用等宽字体
+    rendererType: 'canvas'   // 使用canvas渲染
   })
 
   fitAddon = new FitAddon()
@@ -68,17 +71,44 @@ const initTerminal = () => {
   terminal.open(terminalRef.value)
   fitAddon.fit()
 
-  terminal.write('\r\n$ ')
-
   let commandBuffer = ''
   let isProcessingCommand = false
+  let ctrlPressed = false
 
+  // 添加键盘事件监听
+  terminal.attachCustomKeyEventHandler((event) => {
+    // 检测 Ctrl 键的按下和释放
+    if (event.type === 'keydown' && event.key === 'Control') {
+      ctrlPressed = true
+      return true
+    }
+    if (event.type === 'keyup' && event.key === 'Control') {
+      ctrlPressed = false
+      return true
+    }
+
+    // 检测 Ctrl+C
+    if (event.type === 'keydown' && ctrlPressed && (event.key === 'c' || event.key === 'C')) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'key',
+          key: 'ctrl+c'
+        }))
+      }
+      return false // 不阻止默认行为，让终端显示 ^C
+    }
+
+    return true
+  })
+
+  // 处理终端输入
   terminal.onData(data => {
     if (!isConnected.value) {
       terminal.write('\r\nWebSocket未连接，请等待连接成功...\r\n$ ')
       return
     }
 
+    // 处理回车键
     if (data === '\r') {
       isProcessingCommand = true
       const command = commandBuffer.trim()
@@ -90,14 +120,13 @@ const initTerminal = () => {
         }))
       }
       commandBuffer = ''
-      terminal.write('\r\n')
       isProcessingCommand = false
-    } else if (data === '\u007f') { 
+    } else if (data === '\u007f') { // 退格键
       if (commandBuffer.length > 0) {
         commandBuffer = commandBuffer.slice(0, -1)
         terminal.write('\b \b')
       }
-    } else if (!isProcessingCommand && data >= ' ') { 
+    } else if (!isProcessingCommand && data >= ' ') { // 可打印字符
       commandBuffer += data
       terminal.write(data)
     }
@@ -112,7 +141,7 @@ const connectWebSocket = () => {
   ws.onopen = () => {
     console.log('WebSocket连接成功')
     isConnected.value = true
-    terminal.write('WebSocket连接成功...\r\n$ ')
+    terminal.write('\r\nWebSocket连接成功\r\n')
   }
 
   ws.onclose = () => {
@@ -132,27 +161,33 @@ const connectWebSocket = () => {
       const data = JSON.parse(event.data)
       switch(data.type) {
         case 'test':
-          terminal.write(`${data.data}`)
+          terminal.write(data.data)
           if (!data.data.endsWith('\n')) {
             terminal.write('\r\n')
           }
-          terminal.write('$ ')
           break
         case 'cmd':
+          // 处理命令输出，保持格式
           const output = data.data.toString()
+          // 移除末尾的换行符，因为我们会自己添加
           const cleanOutput = output.replace(/\n+$/, '')
-          terminal.write(cleanOutput)
-          if (!cleanOutput.endsWith('\n')) {
-            terminal.write('\r\n')
+          
+          // 如果输出不是以提示符结尾，则添加提示符
+          if (!cleanOutput.endsWith('# ') && !cleanOutput.endsWith('$ ')) {
+            terminal.write(cleanOutput)
+            if (!cleanOutput.endsWith('\n')) {
+              terminal.write('\r\n')
+            }
+          } else {
+            // 如果已经有提示符，直接输出
+            terminal.write(cleanOutput)
           }
-          terminal.write('$ ')
           break
         default:
           terminal.write(data.data)
           if (!data.data.endsWith('\n')) {
             terminal.write('\r\n')
           }
-          terminal.write('$ ')
       }
     } catch (e) {
       console.error('解析消息错误:', e)
