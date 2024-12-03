@@ -120,9 +120,6 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 			// 从缓冲区读取数据
 			input := s.sshcon.ComboOutput.Bytes()
 			if len(input) > 0 {
-				// 清空缓冲区
-				s.sshcon.ComboOutput.Buffer.Reset()
-
 				// 发送输出到WebSocket
 				if err := wscon.WriteJSON(WsMsg{
 					Type: "cmd",
@@ -131,6 +128,8 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 					glog.Error(ctx, "发送WebSocket消息失败:", err)
 					return
 				}
+				// 清空缓冲区
+				s.sshcon.ComboOutput.Reset()
 			}
 		}
 	}

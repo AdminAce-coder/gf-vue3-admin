@@ -77,14 +77,14 @@ func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
 
 	// 修改终端模式设置
 	modes := gossh.TerminalModes{
-		gossh.ECHO:          1,     // 回显
+		gossh.ECHO:          1,     // 启用回显
 		gossh.TTY_OP_ISPEED: 14400, // 输入速度
 		gossh.TTY_OP_OSPEED: 14400, // 输出速度
 		gossh.IEXTEN:        0,     // 禁用扩展功能
-		gossh.IGNCR:         1,     // 忽略回车
-		gossh.INLCR:         0,     // 禁止将NL转换为CR
-		gossh.ICRNL:         0,     // 禁止将CR转换为NL
-		gossh.OPOST:         0,     // 禁用输出处理
+		gossh.ISIG:          1,     // 启用信号处理
+		gossh.ICANON:        1,     // 启用规范模式
+		gossh.ICRNL:         1,     // 将CR转换为NL
+		gossh.IGNCR:         0,     // 不忽略CR
 	}
 
 	// 请求伪终端
@@ -118,11 +118,9 @@ type wsBufferWriter struct {
 	mu     sync.Mutex
 }
 
-func (w *wsBufferWriter) Write(p []byte) (int, error) {
+func (w *wsBufferWriter) Write(p []byte) (n int, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	// 添加调试日志
-	fmt.Printf("收到SSH输出: %q\n", string(p))
 	return w.Buffer.Write(p)
 }
 
@@ -130,4 +128,10 @@ func (w *wsBufferWriter) Bytes() []byte {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.Buffer.Bytes()
+}
+
+func (w *wsBufferWriter) Reset() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.Buffer.Reset()
 }
