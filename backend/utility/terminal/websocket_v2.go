@@ -38,11 +38,19 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	sshClient, err := ssh.NewSshConfig(ctx)
 	if err != nil {
 		glog.Error(ctx, "SSH客户端配置失败:", err)
+		ws.WriteJSON(map[string]interface{}{
+			"type": "error",
+			"data": fmt.Sprintf("SSH连接失败: %v", err),
+		})
 		return
 	}
 	sshConn, err := sshClient.NewSshConn(2048, 2048)
 	if err != nil {
 		glog.Error(ctx, "创建SSH连接失败:", err)
+		ws.WriteJSON(map[string]interface{}{
+			"type": "error",
+			"data": fmt.Sprintf("创建SSH连接失败: %v", err),
+		})
 		return
 	}
 
