@@ -39,6 +39,7 @@ func NewSshWsSession(sshcon *SshConn, wsConn *websocket.Conn) *SshWsSession {
 func (s *SshWsSession) Close() {
 	s.sshcon.Close()
 }
+
 func (s *SshWsSession) Start(quitchan chan bool) {
 	go s.receiveWsMsg(quitchan)
 	go s.SendComboOutput(quitchan)
@@ -59,16 +60,16 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 				glog.Error(ctx, "读取WebSocket消息错误:", err)
 				return
 			}
-			glog.Info(ctx, "正在解析消息")
-			rmgs := WsMsg{}
-			if err := json.Unmarshal(data, &rmgs); err != nil {
+
+			rmsg := WsMsg{}
+			if err := json.Unmarshal(data, &rmsg); err != nil {
 				glog.Error(ctx, "解析消息失败:", err)
 				continue
 			}
 
 			// 处理特殊键
-			if rmgs.Type == "key" {
-				switch rmgs.Key {
+			if rmsg.Type == "key" {
+				switch rmsg.Key {
 				case "ctrl+c":
 					// 发送中断信号 (ASCII 0x03 = Ctrl+C)
 					if err := s.SendmgsToPipe([]byte{0x03}); err != nil {
@@ -79,13 +80,13 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 			}
 
 			// 过滤空命令
-			command := strings.TrimSpace(rmgs.Data)
+			command := strings.TrimSpace(rmsg.Data)
 			if command == "" {
 				continue
 			}
 
 			glog.Infof(ctx, "发送的命令是：%s", command)
-			// 将字符串转换为字节切片，确保命令以换行符结束
+			// 将命令转换为字节切片，确保命令以换行符结束
 			byteMsg := []byte(command + "\n")
 			if err := s.SendmgsToPipe(byteMsg); err != nil {
 				glog.Error(ctx, "发送命令到SSH管道失败:", err)
@@ -95,14 +96,16 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 	}
 }
 
-// 发送 WebSocket 输入命令到 SSH 会话的标准输入管道
-func (s *SshWsSession) SendmgsToPipe(cmdBytes []byte) error {
-	fmt.Println("正在 输入命令到 SSH 会话的标准输入管道:", string(cmdBytes))
-	_, err := s.sshcon.StdinPipe.Write(cmdBytes)
+// SendmgsToPipe 发送消息到管道
+func (s *SshWsSession) SendmgsToPipe(msg []byte) error {
+	if s.sshcon == nil || s.sshcon.StdinPipe == nil {
+		return fmt.Errorf("SSH连接未建立")
+	}
+	_, err := s.sshcon.StdinPipe.Write(msg)
 	return err
 }
 
-// 发送 WebSocket 消息
+// SendComboOutput 发送组合输出
 func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 	ctx := gctx.New()
 	wscon := s.wsConn
@@ -110,14 +113,14 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 	ticker := time.NewTicker(time.Millisecond * time.Duration(30))
 	defer ticker.Stop()
 
-	var buffer bytes.Buffer
+	buffer := bytes.Buffer{}
+
 	for {
 		select {
+		case <-exitCh:
+			return
 		case <-ticker.C:
-			if s.sshcon.ComboOutput == nil {
-				return
-			}
-			// 获取输入
+			// 从缓冲区读取数据
 			input := s.sshcon.ComboOutput.Bytes()
 			if len(input) > 0 {
 				// 将新数据追加到缓冲区
@@ -126,27 +129,19 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 				// 检查是否有完整的输出行
 				if bytes.Contains(input, []byte{'\n'}) || len(buffer.Bytes()) > 1024 {
 					output := buffer.String()
-					wsdata, err := json.Marshal(WsMsg{
-						Type: "cmd",
-						Data: output,
-					})
-					if err != nil {
-						glog.Error(ctx, "序列化消息失败:", err)
-						continue
-					}
-
-					// 发送数据
-					if err = wscon.WriteMessage(websocket.TextMessage, wsdata); err != nil {
-						glog.Error(ctx, "发送数据失败:", err)
-					}
-
 					// 清空缓冲区
 					buffer.Reset()
-					s.sshcon.ComboOutput.Buffer.Reset()
+
+					// 发送输出到WebSocket
+					if err := wscon.WriteJSON(WsMsg{
+						Type: "cmd",
+						Data: output,
+					}); err != nil {
+						glog.Error(ctx, "发送WebSocket消息失败:", err)
+						return
+					}
 				}
 			}
-		case <-exitCh:
-			return
 		}
 	}
 }

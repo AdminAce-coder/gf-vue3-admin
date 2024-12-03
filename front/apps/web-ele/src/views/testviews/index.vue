@@ -60,9 +60,9 @@ const initTerminal = () => {
     convertEol: true,
     cols: 120,
     rows: 30,
-    cursorStyle: 'block',    // 添加光标样式
-    fontFamily: 'Consolas, "Courier New", monospace',  // 使用等宽字体
-    rendererType: 'canvas'   // 使用canvas渲染
+    cursorStyle: 'block',
+    fontFamily: 'Consolas, "Courier New", monospace',
+    rendererType: 'canvas'
   })
 
   fitAddon = new FitAddon()
@@ -72,7 +72,6 @@ const initTerminal = () => {
   fitAddon.fit()
 
   let commandBuffer = ''
-  let isProcessingCommand = false
   let ctrlPressed = false
 
   // 添加键盘事件监听
@@ -94,8 +93,10 @@ const initTerminal = () => {
           type: 'key',
           key: 'ctrl+c'
         }))
+        // 清空当前命令缓冲区
+        commandBuffer = ''
       }
-      return false // 不阻止默认行为，让终端显示 ^C
+      return false
     }
 
     return true
@@ -103,14 +104,13 @@ const initTerminal = () => {
 
   // 处理终端输入
   terminal.onData(data => {
-    if (!isConnected.value) {
+    if (!isConnected.value || !ws || ws.readyState !== WebSocket.OPEN) {
       terminal.write('\r\nWebSocket未连接，请等待连接成功...\r\n$ ')
       return
     }
 
     // 处理回车键
     if (data === '\r') {
-      isProcessingCommand = true
       const command = commandBuffer.trim()
       if (command) {
         console.log('Sending command:', command)
@@ -118,15 +118,19 @@ const initTerminal = () => {
           type: 'message',
           data: command
         }))
+        // 清空命令缓冲区
+        commandBuffer = ''
       }
-      commandBuffer = ''
-      isProcessingCommand = false
-    } else if (data === '\u007f') { // 退格键
+    }
+    // 处理退格键
+    else if (data === '\u007f') {
       if (commandBuffer.length > 0) {
         commandBuffer = commandBuffer.slice(0, -1)
         terminal.write('\b \b')
       }
-    } else if (!isProcessingCommand && data >= ' ') { // 可打印字符
+    }
+    // 处理可打印字符
+    else if (data >= ' ') {
       commandBuffer += data
       terminal.write(data)
     }
@@ -167,20 +171,12 @@ const connectWebSocket = () => {
           }
           break
         case 'cmd':
-          // 处理命令输出，保持格式
           const output = data.data.toString()
           // 移除末尾的换行符，因为我们会自己添加
           const cleanOutput = output.replace(/\n+$/, '')
-          
-          // 如果输出不是以提示符结尾，则添加提示符
-          if (!cleanOutput.endsWith('# ') && !cleanOutput.endsWith('$ ')) {
-            terminal.write(cleanOutput)
-            if (!cleanOutput.endsWith('\n')) {
-              terminal.write('\r\n')
-            }
-          } else {
-            // 如果已经有提示符，直接输出
-            terminal.write(cleanOutput)
+          terminal.write(cleanOutput)
+          if (!cleanOutput.endsWith('\n')) {
+            terminal.write('\r\n')
           }
           break
         default:
@@ -191,7 +187,7 @@ const connectWebSocket = () => {
       }
     } catch (e) {
       console.error('解析消息错误:', e)
-      terminal.write('\r\n消息解析错误\r\n$ ')
+      terminal.write('\r\n消息解析错误\r\n')
     }
   }
 }

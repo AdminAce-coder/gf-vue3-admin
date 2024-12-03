@@ -76,7 +76,7 @@ func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
 	sshSession.Stderr = comboWriter
 
 	modes := gossh.TerminalModes{
-		gossh.ECHO:          1,     // 回显
+		gossh.ECHO:          0,     // 禁用回显以防止重复输出
 		gossh.TTY_OP_ISPEED: 14400, // 输入速度
 		gossh.TTY_OP_OSPEED: 14400, // 输出速度
 	}
