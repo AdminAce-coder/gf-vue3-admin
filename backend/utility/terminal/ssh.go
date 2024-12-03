@@ -3,6 +3,7 @@ package terminal
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"gf-vue3-admin/internal/model/utiliy"
 	"io"
 	"strings"
@@ -22,7 +23,17 @@ type Sshconfig struct {
 }
 
 func (s *Sshconfig) NewSshConfig(ctx context.Context) (*Sshconfig, error) {
-	glog.Infof(ctx, "Userinfo是,%s", s.Userinfo)
+	glog.Infof(ctx, "开始SSH配置，用户信息: %+v", s.Userinfo)
+
+	if s.Userinfo == nil {
+		return nil, fmt.Errorf("用户信息未初始化")
+	}
+
+	// 确保地址中包含端口号
+	if !strings.Contains(s.Userinfo.Addr, ":") {
+		s.Userinfo.Addr = fmt.Sprintf("%s:%d", s.Userinfo.Addr, 22) // 默认使用22端口
+	}
+
 	// 配置超时时间
 	if s.DialTimeOut == 0 {
 		s.DialTimeOut = time.Second * 5
@@ -30,6 +41,7 @@ func (s *Sshconfig) NewSshConfig(ctx context.Context) (*Sshconfig, error) {
 	config := &gossh.ClientConfig{}
 	config.SetDefaults()
 	config.User = s.Userinfo.User
+	config.Timeout = s.DialTimeOut
 	// 配置认证方式为密码认证
 	config.Auth = []gossh.AuthMethod{gossh.Password(s.Userinfo.Password)}
 	config.HostKeyCallback = gossh.InsecureIgnoreHostKey() // 忽略主机密钥
@@ -38,8 +50,8 @@ func (s *Sshconfig) NewSshConfig(ctx context.Context) (*Sshconfig, error) {
 		proto = "tcp6"
 	}
 	client, err := gossh.Dial(proto, s.Userinfo.Addr, config) // 连接到 SSH 服务器
-	if nil != err {
-		return s, err
+	if err != nil {
+		return nil, fmt.Errorf("SSH连接失败: %v", err)
 	}
 	if s.Client == nil {
 		glog.Infof(ctx, "client 为空")
