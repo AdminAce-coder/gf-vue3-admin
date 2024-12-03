@@ -128,8 +128,19 @@ const connectSSH = () => {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          // 直接显示收到的消息
-          terminal.write(`\r\n收到服务器消息: ${JSON.stringify(data)}\r\n`)
+          // 根据消息类型处理
+          switch(data.type) {
+            case 'test':
+              // 测试消息可以简单显示
+              terminal.write(`\r\n${data.data}\r\n`)
+              break
+            case 'cmd':
+              // 命令输出直接写入，不需要显示json格式
+              terminal.write(data.data)
+              break
+            default:
+              terminal.write(`\r\n${data.data}\r\n`)
+          }
         } catch (e) {
           console.error('解析消息错误:', e)
           terminal.write('\r\n消息解析错误\r\n')

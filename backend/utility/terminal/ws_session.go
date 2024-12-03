@@ -3,6 +3,8 @@ package terminal
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/glog"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -42,6 +44,7 @@ func (s *SshWsSession) Start(quitchan chan bool) {
 
 func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 	// 解析消息
+	ctx := gctx.New()
 	wscon := s.wsConn
 	for {
 		select {
@@ -53,10 +56,12 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 				fmt.Println(err)
 				return
 			}
+			glog.Info(ctx, "正在解析消息")
 			rmgs := WsMsg{}
 			if err := json.Unmarshal(data, &rmgs); err != nil {
 				return
 			}
+			glog.Infof(ctx, "为解析消息%v", rmgs)
 			// 将字符串转换为字节切片
 			byteMsg := []byte(rmgs.Data)
 			s.SendmgsToPipe(byteMsg)
