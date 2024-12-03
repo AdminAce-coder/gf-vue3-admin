@@ -61,12 +61,12 @@ type SshConn struct {
 
 // NewSshConn 创建 SSH 连接
 func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
-	sshSession, err := s.Client.NewSession() // 创建会话
+	sshSession, err := s.Client.NewSession()
 	if err != nil {
 		return nil, err
 	}
 
-	stdinP, err := sshSession.StdinPipe() // 获取标准输入管道
+	stdinP, err := sshSession.StdinPipe()
 	if err != nil {
 		return nil, err
 	}
@@ -75,26 +75,40 @@ func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
 	sshSession.Stdout = comboWriter
 	sshSession.Stderr = comboWriter
 
+	// 修改终端模式设置
 	modes := gossh.TerminalModes{
 		gossh.ECHO:          1,     // 启用回显
 		gossh.TTY_OP_ISPEED: 14400, // 输入速度
 		gossh.TTY_OP_OSPEED: 14400, // 输出速度
-		gossh.ICANON:        1,     // 启用规范模式
+		gossh.ICANON:        0,     // 禁用规范模式，改为原始模式
 		gossh.ISIG:          1,     // 启用信号
 		gossh.ICRNL:         1,     // 将CR转换为NL
 		gossh.IEXTEN:        1,     // 启用扩展功能
-		gossh.OPOST:         1,     // 启用输出处理1
-		//gossh.ONLCR:         1,     // 将NL转换为CRNL
+		gossh.OPOST:         1,     // 启用输出处理
+		gossh.ONLCR:         1,     // 将NL转换为CRNL
+		gossh.IXON:          0,     // 禁用输出流控制
+		gossh.IXOFF:         0,     // 禁用输入流控制
+		gossh.IGNCR:         0,     // 不忽略CR
+		gossh.INLCR:         0,     // 不将NL转换为CR
 	}
-	// 请求 PTY
+
+	// 请求伪终端时指定更多参数
 	if err := sshSession.RequestPty("xterm", rows, cols, modes); err != nil {
-		return nil, err
+		sshSession.Close()
+		return nil, fmt.Errorf("请求PTY失败: %v", err)
 	}
-	// 启动 shell
+
+	// 启动shell
 	if err := sshSession.Shell(); err != nil {
-		return nil, err
+		sshSession.Close()
+		return nil, fmt.Errorf("启动Shell失败: %v", err)
 	}
-	return &SshConn{StdinPipe: stdinP, ComboOutput: comboWriter, Session: sshSession}, nil
+
+	return &SshConn{
+		StdinPipe:   stdinP,
+		ComboOutput: comboWriter,
+		Session:     sshSession,
+	}, nil
 }
 
 func (s *SshConn) Close() {
@@ -105,13 +119,15 @@ func (s *SshConn) Close() {
 
 // wsBufferWriter 是组合输出缓冲区的结构体
 type wsBufferWriter struct {
-	Buffer bytes.Buffer // 缓冲区
+	Buffer bytes.Buffer
 	mu     sync.Mutex
 }
 
 func (w *wsBufferWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	// 添加调试日志
+	fmt.Printf("收到SSH输出: %q\n", string(p))
 	return w.Buffer.Write(p)
 }
 

@@ -62,7 +62,8 @@ const initTerminal = () => {
     rows: 30,
     cursorStyle: 'block',
     fontFamily: 'Consolas, "Courier New", monospace',
-    rendererType: 'canvas'
+    rendererType: 'canvas',
+    disableStdin: false,
   })
 
   fitAddon = new FitAddon()
@@ -72,72 +73,58 @@ const initTerminal = () => {
   fitAddon.fit()
 
   let commandBuffer = ''
-  let ctrlPressed = false
 
-  // 添加键盘事件监听
-  terminal.attachCustomKeyEventHandler((event) => {
-    // 检测 Ctrl 键的按下和释放
-    if (event.type === 'keydown' && event.key === 'Control') {
-      ctrlPressed = true
-      return true
-    }
-    if (event.type === 'keyup' && event.key === 'Control') {
-      ctrlPressed = false
-      return true
-    }
-
-    // 检测 Ctrl+C
-    if (event.type === 'keydown' && ctrlPressed && (event.key === 'c' || event.key === 'C')) {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'key',
-          key: 'ctrl+c'
-        }))
-        // 清空当前命令缓冲区
-        commandBuffer = ''
-      }
-      return false
-    }
-
-    return true
-  })
-
-  // 处理终端输入
-  terminal.onData(data => {
+  // 修改终端输入处理
+  terminal.onKey(({ key, domEvent }) => {
     if (!isConnected.value || !ws || ws.readyState !== WebSocket.OPEN) {
-      terminal.write('\r\nWebSocket未连接，请等待连接成功...\r\n$ ')
       return
     }
 
-    // 处理回车键
-    if (data === '\r') {
-      const command = commandBuffer.trim()
-      if (command) {
-        console.log('Sending command:', command)
+    const ev = domEvent
+    const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey
+
+    if (ev.keyCode === 13) { // Enter
+      // 不在这里写入换行，让服务器的回显来处理
+      if (commandBuffer.trim()) {
         ws.send(JSON.stringify({
           type: 'message',
-          data: command
+          data: commandBuffer + '\n'
         }))
-        // 清空命令缓冲区
-        commandBuffer = ''
       }
-    }
-    // 处理退格键
-    else if (data === '\u007f') {
+      commandBuffer = ''
+    } else if (ev.keyCode === 8) { // Backspace
       if (commandBuffer.length > 0) {
-        commandBuffer = commandBuffer.slice(0, -1)
-        terminal.write('\b \b')  // 手动处理退格显示
+        commandBuffer = commandBuffer.substring(0, commandBuffer.length - 1)
+        // 发送退格命令到服务器
+        ws.send(JSON.stringify({
+          type: 'message',
+          data: '\b'
+        }))
       }
+    } else if (printable) {
+      commandBuffer += key
+      // 直接发送字符到服务器，让服务器处理回显
+      ws.send(JSON.stringify({
+        type: 'message',
+        data: key
+      }))
     }
-    // 处理可打印字符
-    else if (data >= ' ') {
-      commandBuffer += data
-      terminal.write(data)  // 手动显示输入字符
+
+    // 处理 Ctrl+C
+    if (ev.ctrlKey && (ev.key === 'c' || ev.key === 'C')) {
+      ws.send(JSON.stringify({
+        type: 'key',
+        key: 'ctrl+c'
+      }))
+      commandBuffer = ''
     }
   })
+
+  // 禁用默认的 onData 处理
+  terminal.onData(() => {})
 }
 
-// 连接WebSocket
+// 修改 WebSocket 消息处理
 const connectWebSocket = () => {
   const wsUrl = 'ws://1.92.75.225:9443/ws'
   ws = new WebSocket(wsUrl)
@@ -164,10 +151,8 @@ const connectWebSocket = () => {
     try {
       const data = JSON.parse(event.data)
       if (data.type === 'cmd' || data.type === 'test') {
+        // 直接写入服务器返回的数据，包括回显
         terminal.write(data.data)
-        if (!data.data.endsWith('\n')) {
-          terminal.write('\r\n')
-        }
       }
     } catch (error) {
       console.error('处理WebSocket消息时出错:', error)
@@ -188,12 +173,6 @@ const connectSSH = () => {
     if (!terminal) {
       initTerminal()
     }
-
-    if (ws) {
-      ws.close()
-      ws = null
-    }
-
     connectWebSocket()
   })
 }
