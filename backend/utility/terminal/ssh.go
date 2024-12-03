@@ -83,7 +83,7 @@ func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
 		gossh.ISIG:          1,     // 启用信号
 		gossh.ICRNL:         1,     // 将CR转换为NL
 		gossh.IEXTEN:        1,     // 启用扩展功能
-		gossh.OPOST:         1,     // 启用输出处理
+		gossh.OPOST:         1,     // 启用输出处理1
 		//gossh.ONLCR:         1,     // 将NL转换为CRNL
 	}
 	// 请求 PTY
