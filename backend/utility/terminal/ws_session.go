@@ -61,7 +61,7 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 			if err := json.Unmarshal(data, &rmgs); err != nil {
 				return
 			}
-			glog.Infof(ctx, "为解析消息%v", rmgs)
+			glog.Infof(ctx, "命令是%s", rmgs.Data)
 			// 将字符串转换为字节切片
 			byteMsg := []byte(rmgs.Data)
 			s.SendmgsToPipe(byteMsg)
