@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"gf-vue3-admin/internal/model/utiliy"
+	"github.com/gogf/gf/v2/os/glog"
 	gossh "golang.org/x/crypto/ssh"
 	"io"
 	"strings"
@@ -20,6 +21,7 @@ type Sshconfig struct {
 }
 
 func (s *Sshconfig) NewSshConfig(ctx context.Context) (*Sshconfig, error) {
+	glog.Infof(ctx, "Userinfo是,%s", s.Userinfo)
 	// 配置超时时间
 	if s.DialTimeOut == 0 {
 		s.DialTimeOut = time.Second * 5

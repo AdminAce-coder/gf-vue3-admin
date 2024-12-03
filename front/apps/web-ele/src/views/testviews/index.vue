@@ -112,7 +112,7 @@ const connectSSH = () => {
     }
 
     try {
-      const wsUrl = `ws://1.92.75.225:8443/ws `
+      const wsUrl = `ws://1.92.75.225:9443/ws `
       ws = new WebSocket(wsUrl)
 
       ws.onopen = () => {
