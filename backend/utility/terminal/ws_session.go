@@ -61,7 +61,7 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 			if err := json.Unmarshal(data, &rmgs); err != nil {
 				return
 			}
-			glog.Infof(ctx, "发送的命令是%s", rmgs.Data)
+			glog.Infof(ctx, "发送的命令是：%s", rmgs.Data)
 			// 将字符串转换为字节切片
 			byteMsg := []byte(rmgs.Data)
 			s.SendmgsToPipe(byteMsg)
@@ -74,6 +74,7 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 
 // 发送 WebSocket 输入命令到 SSH 会话的标准输入管道
 func (s *SshWsSession) SendmgsToPipe(cmdBytes []byte) error {
+	fmt.Println("正在 输入命令到 SSH 会话的标准输入管道:", string(cmdBytes))
 	_, err := s.sshcon.StdinPipe.Write(cmdBytes)
 	return err
 }
