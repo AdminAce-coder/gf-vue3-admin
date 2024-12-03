@@ -111,6 +111,7 @@ const initTerminal = () => {
 
     // 处理回车键
     if (data === '\r') {
+      terminal.write('\r\n')  // 手动添加换行显示
       const command = commandBuffer.trim()
       if (command) {
         console.log('Sending command:', command)
@@ -132,7 +133,7 @@ const initTerminal = () => {
     // 处理可打印字符
     else if (data >= ' ') {
       commandBuffer += data
-      terminal.write(data)
+      terminal.write(data)  // 手动回显字符
     }
   })
 }
