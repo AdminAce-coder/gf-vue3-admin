@@ -31,26 +31,6 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
-	// 获取查询参数
-	host := r.URL.Query().Get("host")
-	port := r.URL.Query().Get("port")
-	username := r.URL.Query().Get("username")
-	password := r.URL.Query().Get("password")
-	cols := r.URL.Query().Get("cols")
-	if cols == "" {
-		cols = "80"
-	}
-	rows := r.URL.Query().Get("rows")
-	if rows == "" {
-		rows = "24"
-	}
-
-	if host == "" || port == "" || username == "" || password == "" {
-		glog.Error(ctx, "缺少必要的SSH连接参数")
-		ws.Close()
-		return
-	}
-
 	// 创建SSH连接
 	ssh := Sshconfig{
 		Userinfo: utiliy.SshUser,
