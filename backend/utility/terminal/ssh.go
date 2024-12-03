@@ -31,31 +31,24 @@ func (s *Sshconfig) NewSshConfig(ctx context.Context) (*Sshconfig, error) {
 
 	// 确保地址中包含端口号
 	if !strings.Contains(s.Userinfo.Addr, ":") {
-		s.Userinfo.Addr = fmt.Sprintf("%s:%d", s.Userinfo.Addr, 22) // 默认使用22端口
+		s.Userinfo.Addr = fmt.Sprintf("%s:%d", s.Userinfo.Addr, 22)
 	}
 
-	// 配置超时时间
-	if s.DialTimeOut == 0 {
-		s.DialTimeOut = time.Second * 5
-	}
 	config := &gossh.ClientConfig{}
 	config.SetDefaults()
 	config.User = s.Userinfo.User
-	config.Timeout = s.DialTimeOut
-	// 配置认证方式为密码认证
 	config.Auth = []gossh.AuthMethod{gossh.Password(s.Userinfo.Password)}
-	config.HostKeyCallback = gossh.InsecureIgnoreHostKey() // 忽略主机密钥
+	config.HostKeyCallback = gossh.InsecureIgnoreHostKey()
+
+	// 始终使用tcp协议，因为我们使用的是IPv4地址
 	proto := "tcp"
-	if strings.Contains(s.Userinfo.Addr, ":") {
-		proto = "tcp6"
-	}
-	client, err := gossh.Dial(proto, s.Userinfo.Addr, config) // 连接到 SSH 服务器
+
+	glog.Infof(ctx, "尝试SSH连接到 %s，使用协议：%s", s.Userinfo.Addr, proto)
+	client, err := gossh.Dial(proto, s.Userinfo.Addr, config)
 	if err != nil {
 		return nil, fmt.Errorf("SSH连接失败: %v", err)
 	}
-	if s.Client == nil {
-		glog.Infof(ctx, "client 为空")
-	}
+
 	s.Client = client
 	return s, nil
 }
