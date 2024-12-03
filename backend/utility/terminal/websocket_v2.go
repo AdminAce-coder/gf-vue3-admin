@@ -42,7 +42,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	sshConn, err := sshClient.NewSshConn(2048, 2048)
 	if err != nil {
-		glog.Error(ctx, "创建SSH连接失败:", err)
+		glog.Error(ctx, "创建SSH连接失1败:", err)
 		return
 	}
 	SshWsSession := NewSshWsSession(sshConn, conn)
