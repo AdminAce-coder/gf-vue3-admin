@@ -113,8 +113,6 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 	ticker := time.NewTicker(time.Millisecond * time.Duration(30))
 	defer ticker.Stop()
 
-	buffer := bytes.Buffer{}
-
 	for {
 		select {
 		case <-exitCh:
@@ -124,18 +122,18 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 			input := s.sshcon.ComboOutput.Bytes()
 			if len(input) > 0 {
 				// 将新数据追加到缓冲区
-				buffer.Write(input)
+				s.sshcon.ComboOutput.Write(input)
 
 				// 检查是否有完整的输出行
-				if bytes.Contains(input, []byte{'\n'}) || len(buffer.Bytes()) > 1024 {
-					output := buffer.String()
+				if bytes.Contains(input, []byte{'\n'}) || len(s.sshcon.ComboOutput.Bytes()) > 1024 {
+					output := s.sshcon.ComboOutput.Bytes()
 					// 清空缓冲区
-					buffer.Reset()
+					s.sshcon.ComboOutput.Buffer.Reset()
 
 					// 发送输出到WebSocket
 					if err := wscon.WriteJSON(WsMsg{
 						Type: "cmd",
-						Data: output,
+						Data: string(output),
 					}); err != nil {
 						glog.Error(ctx, "发送WebSocket消息失败:", err)
 						return
