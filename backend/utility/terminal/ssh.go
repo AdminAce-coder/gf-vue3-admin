@@ -77,24 +77,9 @@ func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
 
 	// 修改终端模式设置
 	modes := gossh.TerminalModes{
-		gossh.ECHO:          1,     // 启用回显
+		gossh.ECHO:          1,     // 回显
 		gossh.TTY_OP_ISPEED: 14400, // 输入速度
 		gossh.TTY_OP_OSPEED: 14400, // 输出速度
-		gossh.ICANON:        0,     // 禁用规范模式
-		gossh.ISIG:          1,     // 启用信号处理
-		gossh.ICRNL:         0,     // 禁用将CR转换为NL
-		gossh.IEXTEN:        0,     // 禁用扩展处理
-		gossh.OPOST:         1,     // 启用输出处理
-		gossh.ONLCR:         0,     // 禁用将NL转换为CRNL
-		gossh.IXON:          0,     // 禁用XON/XOFF流控
-		gossh.IXOFF:         0,     // 禁用XON/XOFF流控
-		gossh.IXANY:         0,     // 禁用任意字符重启输出
-		gossh.IGNPAR:        0,     // 禁用忽略奇偶校验错误
-		gossh.PARMRK:        0,     // 禁用标记奇偶校验错误
-		gossh.INPCK:         0,     // 禁用输入奇偶校验
-		gossh.ISTRIP:        0,     // 禁用剥离第8位
-		gossh.INLCR:         0,     // 禁用将NL转换为CR
-		gossh.IGNCR:         0,     // 禁用忽略CR
 	}
 
 	// 请求伪终端
