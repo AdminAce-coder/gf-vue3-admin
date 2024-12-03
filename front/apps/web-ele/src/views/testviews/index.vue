@@ -86,30 +86,22 @@ const initTerminal = () => {
     const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey
 
     if (ev.keyCode === 13) { // Enter
-      // 不在这里写入换行，让服务器的回显来处理
       if (commandBuffer.trim()) {
         ws.send(JSON.stringify({
           type: 'message',
-          data: commandBuffer + '\n'
+          data: commandBuffer
         }))
+        commandBuffer = ''
       }
-      commandBuffer = ''
+      terminal.write('\r\n')
     } else if (ev.keyCode === 8) { // Backspace
       if (commandBuffer.length > 0) {
         commandBuffer = commandBuffer.substring(0, commandBuffer.length - 1)
-        // 发送退格命令到服务器
-        ws.send(JSON.stringify({
-          type: 'message',
-          data: '\b'
-        }))
+        terminal.write('\b \b')
       }
     } else if (printable) {
       commandBuffer += key
-      // 直接发送字符到服务器，让服务器处理回显
-      ws.send(JSON.stringify({
-        type: 'message',
-        data: key
-      }))
+      terminal.write(key)
     }
 
     // 处理 Ctrl+C
@@ -119,6 +111,7 @@ const initTerminal = () => {
         key: 'ctrl+c'
       }))
       commandBuffer = ''
+      terminal.write('^C\r\n')
     }
   })
 

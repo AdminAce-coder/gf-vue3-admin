@@ -3,7 +3,6 @@ package terminal
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/os/gctx"
@@ -60,39 +59,35 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 				return
 			}
 
-			rmsg := WsMsg{}
-			if err := json.Unmarshal(data, &rmsg); err != nil {
-				glog.Error(ctx, "解析消息失败:", err)
-				continue
-			}
-
-			// 处理特殊键
-			if rmsg.Type == "key" {
-				switch rmsg.Key {
-				case "ctrl+c":
-					// 发送中断信号 (ASCII 0x03 = Ctrl+C)
-					if err := s.SendmgsToPipe([]byte{0x03}); err != nil {
-						glog.Error(ctx, "发送中断信号失败:", err)
-					}
-					continue
-				}
-			}
-
-			// 过滤空命令
-			command := strings.TrimSpace(rmsg.Data)
-			if command == "" {
-				continue
-			}
-
-			glog.Infof(ctx, "发送的命令是：%s", command)
-			// 将命令转换为字节切片，确保命令以换行符结束
-			byteMsg := []byte(command + "\n")
-			if err := s.SendmgsToPipe(byteMsg); err != nil {
-				glog.Error(ctx, "发送命令到SSH管道失败:", err)
+			if err := s.receiveWsMsg(data); err != nil {
+				glog.Error(ctx, "处理WebSocket消息失败:", err)
 				continue
 			}
 		}
 	}
+}
+
+func (s *SshWsSession) receiveWsMsg(msg []byte) error {
+	var wsMsg WsMsg
+	if err := json.Unmarshal(msg, &wsMsg); err != nil {
+		return err
+	}
+
+	switch wsMsg.Type {
+	case "message":
+		// 添加回车换行符
+		data := wsMsg.Data + "\r\n"
+		if _, err := s.sshcon.Write([]byte(data)); err != nil {
+			return fmt.Errorf("写入SSH失败: %v", err)
+		}
+	case "key":
+		if wsMsg.Key == "ctrl+c" {
+			if _, err := s.sshcon.Write([]byte{3}); err != nil {
+				return fmt.Errorf("发送Ctrl+C失败: %v", err)
+			}
+		}
+	}
+	return nil
 }
 
 // SendmgsToPipe 发送消息到管道
@@ -108,8 +103,7 @@ func (s *SshWsSession) SendmgsToPipe(msg []byte) error {
 func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 	ctx := gctx.New()
 	wscon := s.wsConn
-	// 创建一个定时器，减少检查间隔以提高响应速度
-	ticker := time.NewTicker(time.Millisecond * time.Duration(30))
+	ticker := time.NewTicker(time.Millisecond * 10) // 减少检查间隔到10ms
 	defer ticker.Stop()
 
 	for {
@@ -117,18 +111,18 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 		case <-exitCh:
 			return
 		case <-ticker.C:
-			// 从缓冲区读取数据
 			input := s.sshcon.ComboOutput.Bytes()
 			if len(input) > 0 {
 				// 发送输出到WebSocket
-				if err := wscon.WriteJSON(WsMsg{
+				err := wscon.WriteJSON(WsMsg{
 					Type: "cmd",
 					Data: string(input),
-				}); err != nil {
+				})
+				if err != nil {
 					glog.Error(ctx, "发送WebSocket消息失败:", err)
 					return
 				}
-				// 清空缓冲区
+				// 立即清空缓冲区
 				s.sshcon.ComboOutput.Reset()
 			}
 		}
