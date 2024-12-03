@@ -111,7 +111,6 @@ const initTerminal = () => {
 
     // 处理回车键
     if (data === '\r') {
-      terminal.write('\r\n')  // 手动添加换行显示
       const command = commandBuffer.trim()
       if (command) {
         console.log('Sending command:', command)
@@ -127,13 +126,11 @@ const initTerminal = () => {
     else if (data === '\u007f') {
       if (commandBuffer.length > 0) {
         commandBuffer = commandBuffer.slice(0, -1)
-        terminal.write('\b \b')
       }
     }
     // 处理可打印字符
     else if (data >= ' ') {
       commandBuffer += data
-      terminal.write(data)  // 手动回显字符
     }
   })
 }
@@ -164,31 +161,14 @@ const connectWebSocket = () => {
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
-      switch(data.type) {
-        case 'test':
-          terminal.write(data.data)
-          if (!data.data.endsWith('\n')) {
-            terminal.write('\r\n')
-          }
-          break
-        case 'cmd':
-          const output = data.data.toString()
-          // 移除末尾的换行符，因为我们会自己添加
-          const cleanOutput = output.replace(/\n+$/, '')
-          terminal.write(cleanOutput)
-          if (!cleanOutput.endsWith('\n')) {
-            terminal.write('\r\n')
-          }
-          break
-        default:
-          terminal.write(data.data)
-          if (!data.data.endsWith('\n')) {
-            terminal.write('\r\n')
-          }
+      if (data.type === 'cmd' || data.type === 'test') {
+        terminal.write(data.data)
+        if (!data.data.endsWith('\n')) {
+          terminal.write('\r\n')
+        }
       }
-    } catch (e) {
-      console.error('解析消息错误:', e)
-      terminal.write('\r\n消息解析错误\r\n')
+    } catch (error) {
+      console.error('处理WebSocket消息时出错:', error)
     }
   }
 }
