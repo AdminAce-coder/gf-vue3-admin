@@ -3,9 +3,10 @@ package terminal
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/glog"
-	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -53,23 +54,24 @@ func (s *SshWsSession) receiveWsMsg(exitCh chan bool) {
 		default:
 			_, data, err := wscon.ReadMessage()
 			if err != nil {
-				fmt.Println(err)
+				glog.Error(ctx, "读取WebSocket消息错误:", err)
 				return
 			}
 			glog.Info(ctx, "正在解析消息")
 			rmgs := WsMsg{}
 			if err := json.Unmarshal(data, &rmgs); err != nil {
-				return
+				glog.Error(ctx, "解析消息失败:", err)
+				continue // 解析失败继续下一条消息
 			}
 			glog.Infof(ctx, "发送的命令是：%s", rmgs.Data)
 			// 将字符串转换为字节切片
-			byteMsg := []byte(rmgs.Data)
-			s.SendmgsToPipe(byteMsg)
-			return
+			byteMsg := []byte(rmgs.Data + "\n") // 添加换行符
+			if err := s.SendmgsToPipe(byteMsg); err != nil {
+				glog.Error(ctx, "发送命令到SSH管道失败:", err)
+				continue
+			}
 		}
-
 	}
-
 }
 
 // 发送 WebSocket 输入命令到 SSH 会话的标准输入管道
