@@ -7,7 +7,7 @@ import (
 	"gf-vue3-admin/internal/model/utiliy"
 	"gf-vue3-admin/utility/docode"
 
-	"github.com/gogf/gf/v2/net/gssh"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var SshUser *utiliy.SshUserInfo
@@ -22,16 +22,17 @@ func (c *ControllerV1) SshInfo(ctx context.Context, req *v1.SshInfoReq) (res *v1
 	}
 
 	// 测试SSH连接
-	ssh := gssh.SshConfig{
-		Userinfo: SshUser,
+	sshConfig := &gossh.ClientConfig{
+		User: req.User,
+		Auth: []gossh.AuthMethod{
+			gossh.Password(req.Password),
+		},
+		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
 	}
-
-	// 尝试建立SSH连接
-	sshClient, err := ssh.NewSshConfig(ctx)
+	_, err = gossh.Dial("tcp", fmt.Sprintf("%s:%d", req.Addr, req.Port), sshConfig)
 	if err != nil {
 		return nil, docode.NewError(400, fmt.Sprintf("SSH连接失败:%v", err))
 	}
-	defer sshClient.Client.Close()
 
 	return nil, nil
 }
