@@ -64,6 +64,8 @@ const initTerminal = () => {
     fontFamily: 'Consolas, "Courier New", monospace',
     rendererType: 'canvas',
     disableStdin: false,
+    allowProposedApi: true,
+    windowsMode: false
   })
 
   fitAddon = new FitAddon()

@@ -80,10 +80,15 @@ func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
 		gossh.ECHO:          1,     // 回显
 		gossh.TTY_OP_ISPEED: 14400, // 输入速度
 		gossh.TTY_OP_OSPEED: 14400, // 输出速度
+		gossh.IEXTEN:        0,     // 禁用扩展功能
+		gossh.IGNCR:         1,     // 忽略回车
+		gossh.INLCR:         0,     // 禁止将NL转换为CR
+		gossh.ICRNL:         0,     // 禁止将CR转换为NL
+		gossh.OPOST:         0,     // 禁用输出处理
 	}
 
 	// 请求伪终端
-	if err := sshSession.RequestPty("xterm-256color", rows, cols, modes); err != nil {
+	if err := sshSession.RequestPty("xterm", rows, cols, modes); err != nil {
 		sshSession.Close()
 		return nil, fmt.Errorf("请求PTY失败: %v", err)
 	}

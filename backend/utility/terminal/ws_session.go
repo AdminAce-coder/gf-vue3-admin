@@ -1,7 +1,6 @@
 package terminal
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -121,23 +120,16 @@ func (s *SshWsSession) SendComboOutput(exitCh chan bool) {
 			// 从缓冲区读取数据
 			input := s.sshcon.ComboOutput.Bytes()
 			if len(input) > 0 {
-				// 将新数据追加到缓冲区
-				s.sshcon.ComboOutput.Write(input)
+				// 清空缓冲区
+				s.sshcon.ComboOutput.Buffer.Reset()
 
-				// 检查是否有完整的输出行
-				if bytes.Contains(input, []byte{'\n'}) || len(s.sshcon.ComboOutput.Bytes()) > 1024 {
-					output := s.sshcon.ComboOutput.Bytes()
-					// 清空缓冲区
-					s.sshcon.ComboOutput.Buffer.Reset()
-
-					// 发送输出到WebSocket
-					if err := wscon.WriteJSON(WsMsg{
-						Type: "cmd",
-						Data: string(output),
-					}); err != nil {
-						glog.Error(ctx, "发送WebSocket消息失败:", err)
-						return
-					}
+				// 发送输出到WebSocket
+				if err := wscon.WriteJSON(WsMsg{
+					Type: "cmd",
+					Data: string(input),
+				}); err != nil {
+					glog.Error(ctx, "发送WebSocket消息失败:", err)
+					return
 				}
 			}
 		}
