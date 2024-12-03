@@ -79,6 +79,12 @@ func (s *Sshconfig) NewSshConn(cols, rows int) (*SshConn, error) {
 		gossh.ECHO:          1,     // 启用回显
 		gossh.TTY_OP_ISPEED: 14400, // 输入速度
 		gossh.TTY_OP_OSPEED: 14400, // 输出速度
+		gossh.ICANON:        1,     // 启用规范模式
+		gossh.ISIG:          1,     // 启用信号
+		gossh.ICRNL:         1,     // 将CR转换为NL
+		gossh.IEXTEN:        1,     // 启用扩展功能
+		gossh.OPOST:         1,     // 启用输出处理
+		gossh.ONLCR:         1      // 将NL转换为CRNL
 	}
 	// 请求 PTY
 	if err := sshSession.RequestPty("xterm", rows, cols, modes); err != nil {

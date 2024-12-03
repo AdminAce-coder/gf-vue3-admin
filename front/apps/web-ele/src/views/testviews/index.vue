@@ -126,11 +126,13 @@ const initTerminal = () => {
     else if (data === '\u007f') {
       if (commandBuffer.length > 0) {
         commandBuffer = commandBuffer.slice(0, -1)
+        terminal.write('\b \b')  // 手动处理退格显示
       }
     }
     // 处理可打印字符
     else if (data >= ' ') {
       commandBuffer += data
+      terminal.write(data)  // 手动显示输入字符
     }
   })
 }
