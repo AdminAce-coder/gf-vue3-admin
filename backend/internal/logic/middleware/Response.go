@@ -39,15 +39,7 @@ func (s *sMiddleware) Returndata(r *ghttp.Request) {
 		if e, ok := err.(*docode.ErrorWithCode); ok {
 			rcode = e.Code()
 			msg = e.Error()
-			// 如果是认证相关的错误码，设置 401 状态码
-			//if rcode == code2.UNAUTHORIZED || rcode == code2.TOKEN_EXPIRED {
-			//if _, ok := err.(*jwt.ValidationError); ok {
-			//	httpStatus = http.StatusUnauthorized
-			//} else if rcode >= 1000 && rcode < 10000 {
-			//	httpStatus = http.StatusBadRequest
-			//} else {
-			//	httpStatus = http.StatusBadRequest
-			//}
+
 			isCodeSet := rcode != 0 // 检查是否传入了有效的状态码
 			if isCodeSet {
 				httpStatus = rcode

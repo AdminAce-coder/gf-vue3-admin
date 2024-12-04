@@ -15,5 +15,5 @@ type Ssh struct {
 	User     interface{} //
 	Password interface{} //
 	Port     interface{} //
-	Host     interface{} //
+	Addr     interface{} //
 }

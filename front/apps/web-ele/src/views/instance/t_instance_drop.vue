@@ -7,17 +7,17 @@
     @close="handleClose"
   >
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-      <el-form-item label="主机名称" prop="name">
-        <el-input v-model="form.name" placeholder="请输入主机名称"></el-input>
+      <el-form-item label="主机名称" prop="hostname">
+        <el-input v-model="form.hostname" placeholder="请输入主机名称"></el-input>
       </el-form-item>
-      <el-form-item label="主机地址" prop="host">
-        <el-input v-model="form.host" placeholder="请输入主机IP地址"></el-input>
+      <el-form-item label="主机地址" prop="addr">
+        <el-input v-model="form.addr" placeholder="请输入主机IP地址"></el-input>
       </el-form-item>
       <el-form-item label="端口" prop="port">
         <el-input-number v-model="form.port" :min="1" :max="65535" placeholder="请输入端口号"></el-input-number>
       </el-form-item>
-      <el-form-item label="用户名" prop="username">
-        <el-input v-model="form.username" placeholder="请输入用户名"></el-input>
+      <el-form-item label="用户名" prop="user">
+        <el-input v-model="form.user" placeholder="请输入用户名"></el-input>
       </el-form-item>
       <el-form-item label="密码" prop="password">
         <el-input v-model="form.password" type="password" placeholder="请输入密码"></el-input>
@@ -34,23 +34,24 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-
+import { createSSHConnection } from '#/api/systemctl/instance'
+import { ElMessage } from 'element-plus'
 const dialogVisible = ref(false)
 const formRef = ref(null)
 
 const form = reactive({
-  name: '',
-  host: '',
+  hostname: '',
+  addr: '',
   port: 22,
-  username: '',
+  user: '',
   password: ''
 })
 
 const rules = {
-  name: [{ required: true, message: '请输入主机名称', trigger: 'blur' }],
-  host: [{ required: true, message: '请输入主机地址', trigger: 'blur' }],
+  hostname: [{ required: true, message: '请输入主机名称', trigger: 'blur' }],
+  addr: [{ required: true, message: '请输入主机地址', trigger: 'blur' }],
   port: [{ required: true, message: '请输入端口号', trigger: 'blur' }],
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  user: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
@@ -61,11 +62,16 @@ const handleClose = () => {
 
 const handleSubmit = async () => {
   if (!formRef.value) return
-  await formRef.value.validate((valid) => {
+  await formRef.value.validate(async (valid) => {
     if (valid) {
-      // TODO: 这里添加提交逻辑
-      console.log('提交的表单数据：', form)
-      handleClose()
+      try {
+        const res = await createSSHConnection(form)
+        ElMessage.success('主机添加成功')
+        handleClose()
+      } catch (error) {
+        console.error('连接失败：', error)
+        ElMessage.error('主机添加失败：' + error.message)
+      }
     }
   })
 }

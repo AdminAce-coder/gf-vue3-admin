@@ -1,9 +1,20 @@
 <template>
   <div class="host-table">
-    <el-table :data="tableData" style="width: 100%" border>
-      <el-table-column prop="name" label="主机名称" />
-      <el-table-column prop="ip" label="IP地址" />
+    <div class="table-header">
+      <el-button type="primary" size="large" @click="showAddDialog">
+        新增主机
+      </el-button>
+      <el-button type="primary" size="large" :icon="Refresh" @click="refreshTable">
+        刷新
+      </el-button>
+      <TInstanceDrop ref="instanceDropRef" />
+    </div>
+
+    <el-table :data="sshInfoList" style="width: 100%" border>
+      <el-table-column prop="hostname" label="主机名称" />
+      <el-table-column prop="host" label="IP地址" />
       <el-table-column prop="port" label="端口" width="100" />
+      <el-table-column prop="user" label="用户名" />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === '在线' ? 'success' : 'danger'">
@@ -22,34 +33,99 @@
         </template>
       </el-table-column>
     </el-table>
+    <TTerminal ref="terminalRef" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
+import { getSSHConnectionInfo as fetchSSHInfo } from '#/api/systemctl/instance'
+import { Refresh } from '@element-plus/icons-vue'
+import TInstanceDrop from './t_instance_drop.vue'
+// 测试连接
+import { testSSHConnection } from '#/api/systemctl/instance'
+// 连接SSH
+import { connectSSH } from '#/api/systemctl/instance'
+import { ElMessage } from 'element-plus'
+import TTerminal from './t_terminal.vue'  // 导入终端组件
+import { useRouter } from 'vue-router'  // 添加这行
 
-// 模拟数据
-const tableData = ref([
-  {
-    name: '测试服务器1',
-    ip: '192.168.1.100',
-    port: 22,
-    status: '在线'
-  },
-  {
-    name: '测试服务器2',
-    ip: '192.168.1.101',
-    port: 22,
-    status: '离线'
+const sshInfoList = ref([])
+const instanceDropRef = ref(null)
+const terminalRef = ref(null)
+const router = useRouter()
+
+// 获取SSH连接信息
+const getSSHConnectionInfo = async () => {
+  try {
+    const res = await fetchSSHInfo()
+    console.log('完整响应:', res)
+    sshInfoList.value = res.ssh_info_list
+  } catch (error) {
+    console.error('获取SSH连接信息失败:', error)
   }
-])
+}
 
-const handleConnect = (row: any) => {
-  console.log('连接主机:', row)
+// 页面加载时获取数据
+getSSHConnectionInfo()
+
+const handleConnect = async (row: any) => {
+  try {
+    // 首先检查终端组件是否已挂载
+    if (!terminalRef.value) {
+      ElMessage.error('终端组件未准备就绪')
+      return
+    }
+
+    // 第一步：测试SSH连接
+    const testResult = await testSSHConnection({
+      host: row.host
+    })
+
+    if (!testResult) {
+      ElMessage.error('连接测试失败：服务器无响应')
+      return
+    }
+
+    if (testResult.code === 0) {
+      // 第二步：建立SSH连接
+      const connectResult = await connectSSH({
+        host: row.host,
+      })
+
+      if (!connectResult || connectResult.code === 0) {
+        // 连接成功后跳转到终端页面
+        router.push({
+          name: 'terminal',  // 替换成您的终端页面路由名称
+          params: {
+            host: row.host
+          }
+        })
+        ElMessage.success('SSH连接成功')
+      } else {
+        ElMessage.error(`SSH连接失败: ${connectResult?.message || '未知错误'}`)
+      }
+    } else {
+      ElMessage.error(`SSH连接测试失败: ${testResult.message || '未知错误'}`)
+    }
+
+  } catch (error) {
+    console.error('连接过程出错:', error)
+    ElMessage.error('连接失败：' + (error.message || '未知错误'))
+  }
 }
 
 const handleDelete = (row: any) => {
   console.log('删除主机:', row)
+}
+
+// 刷新表格数据
+const refreshTable = () => {
+  getSSHConnectionInfo()
+}
+
+const showAddDialog = () => {
+  instanceDropRef.value?.showDialog()
 }
 </script>
 
@@ -65,5 +141,10 @@ const handleDelete = (row: any) => {
 :deep(.el-button--small) {
   padding: 8px 15px;
   margin: 0 5px;
+}
+
+.table-header {
+  margin-bottom: 16px;
+  text-align: right;
 }
 </style>

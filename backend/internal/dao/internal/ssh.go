@@ -24,16 +24,16 @@ type SshColumns struct {
 	User     string //
 	Password string //
 	Port     string //
-	Host     string //
+	Addr     string //
 }
 
 // sshColumns holds the columns for table ssh.
 var sshColumns = SshColumns{
-	HostName: "Host_Name",
+	HostName: "HostName",
 	User:     "User",
 	Password: "Password",
 	Port:     "Port",
-	Host:     "Host",
+	Addr:     "Addr",
 }
 
 // NewSshDao creates and returns a new DAO object for table data access.

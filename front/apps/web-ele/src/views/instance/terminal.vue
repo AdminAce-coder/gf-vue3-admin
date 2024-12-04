@@ -16,10 +16,6 @@
       <div class="content-window">
         <template v-if="activeTab === 'host'">
           <div class="host-header">
-            <el-button type="primary" size="large" @click="showAddDialog">
-              新增主机
-            </el-button>
-            <TInstanceDrop ref="instanceDropRef" />
           </div>
           <host-table />
         </template>
@@ -28,7 +24,7 @@
           快速命令内容
         </div>
         <div v-if="activeTab === 'terminal'" class="terminal-content">
-          终端内容
+          <Terminal />
         </div>
       </div>
     </div>
@@ -38,7 +34,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import HostTable from './t_instance.vue'
-import TInstanceDrop from './t_instance_drop.vue'
+import Terminal from './t_terminal.vue'
 
 const activeTab = ref('host')
 const tabs = [
@@ -46,12 +42,6 @@ const tabs = [
   { label: '快速命令', name: 'quick-command' },
   { label: '终端', name: 'terminal' }
 ]
-
-const instanceDropRef = ref(null)
-
-const showAddDialog = () => {
-  instanceDropRef.value?.showDialog()
-}
 </script>
 
 <style scoped>

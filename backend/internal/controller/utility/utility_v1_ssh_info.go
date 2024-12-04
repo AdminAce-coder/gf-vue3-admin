@@ -6,6 +6,7 @@ import (
 	v1 "gf-vue3-admin/api/utility/v1"
 	"gf-vue3-admin/internal/model/utiliy"
 	"gf-vue3-admin/utility/docode"
+	"github.com/gogf/gf/v2/os/glog"
 
 	gossh "golang.org/x/crypto/ssh"
 )
@@ -33,6 +34,6 @@ func (c *ControllerV1) SshInfo(ctx context.Context, req *v1.SshInfoReq) (res *v1
 	if err != nil {
 		return nil, docode.NewError(400, fmt.Sprintf("SSH连接失败:%v", err))
 	}
-
+	glog.Infof(ctx, "连接成功")
 	return nil, nil
 }

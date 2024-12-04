@@ -1,6 +1,8 @@
 package v1
 
-import "github.com/gogf/gf/v2/frame/g"
+import (
+	"github.com/gogf/gf/v2/frame/g"
+)
 
 type Utility_Create_OssReq struct {
 	g.Meta `path:"/utility_create_oss" method:"post" tags:"utility" dc:"创建存储桶"`
@@ -35,10 +37,47 @@ type SshUserReq struct {
 	// 用户
 	Hostname string `v:"required" dc:"连接名"`
 	User     string `v:"required" dc:"用户"`
-	Port     string `v:"required" dc:""`
+	Port     int    `v:"required" dc:""`
 	Password string `v:"required" dc:""`
 	Host     string `v:"required" dc:"地址"`
 }
 
 type SshUserRes struct {
+}
+
+// 测试连接接口
+type SshTryReq struct {
+	g.Meta `path:"/sshtrl" method:"post" tags:"utility" dc:""`
+	//  主机地址
+	Host string `v:"required" dc:"地址"`
+}
+
+type SshTryRes struct {
+}
+
+// 查询ssh信息
+
+type GetSshInfoReq struct {
+	g.Meta `path:"/getsshinfo" method:"get" tags:"utility" dc:""`
+	//  主机地址
+}
+
+type GetSshInfoRes struct {
+	SshInfoList []struct {
+		HostName string `json:"hostname"`
+		User     string `json:"user"`
+		Port     int    `json:"port"`
+		Password string `json:"password"`
+		Host     string `json:"host"`
+	} `json:"ssh_info_list"`
+}
+
+// 连接SSH
+type ConnectSshReq struct {
+	g.Meta `path:"/connectssh" method:"post" tags:"utility" dc:""`
+	// 主机地址
+	Host string `v:"required" dc:"地址"`
+}
+
+type ConnectSshRes struct {
 }
