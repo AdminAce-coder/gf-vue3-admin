@@ -53,10 +53,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="scope">
             <el-button type="primary" size="small" @click="handleEdit(scope.row)">
               <el-icon><Edit /></el-icon>编辑
+            </el-button>
+            <el-button type="success" size="small" @click="handleTest(scope.row)">
+              <el-icon><VideoPlay /></el-icon>测试
             </el-button>
             <el-button type="danger" size="small" @click="handleDelete(scope.row)">
               <el-icon><Delete /></el-icon>删除
@@ -245,11 +248,51 @@
           </el-select>
         </el-form-item>
         <el-form-item label="API版本" required>
-          <el-input v-model="deleteGroupFormData.version" placeholder="请输入API版本，例如：v1" />
+          <el-input v-model="deleteGroupFormData.version" placeholder="请输入API版本，例如v1" />
         </el-form-item>
         <el-form-item>
           <el-button type="danger" @click="submitDeleteGroup">确认删除</el-button>
           <el-button @click="deleteGroupDrawer.visible = false">取消</el-button>
+        </el-form-item>
+      </el-form>
+    </el-drawer>
+
+    <el-drawer
+      v-model="testDrawer.visible"
+      :title="testDrawer.title"
+      size="600px"
+    >
+      <el-form :model="testFormData" label-width="100px">
+        <el-form-item label="请求方法">
+          <el-tag :type="getMethodTagType(testFormData.method)">
+            {{ testFormData.method.toUpperCase() }}
+          </el-tag>
+        </el-form-item>
+        <el-form-item label="请求路径">
+          <el-input v-model="testFormData.path" disabled />
+        </el-form-item>
+        <el-form-item label="使用鉴权">
+          <el-switch
+            v-model="testFormData.useAuth"
+            active-text="是"
+            inactive-text="否"
+          />
+        </el-form-item>
+        <el-form-item label="请求参数" v-if="testFormData.method !== 'GET'">
+          <el-input
+            v-model="testFormData.requestBody"
+            type="textarea"
+            :rows="8"
+            placeholder="请输入JSON格式的请求参数"
+          />
+        </el-form-item>
+        <el-divider>响应结果</el-divider>
+        <el-form-item>
+          <pre class="response-box">{{ testFormData.response }}</pre>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="executeTest">执行测试</el-button>
+          <el-button @click="testDrawer.visible = false">关闭</el-button>
         </el-form-item>
       </el-form>
     </el-drawer>
@@ -261,7 +304,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getApiInfo,createApiInfo, createApiGroup ,deleteApiGroup,deleteApi} from '#/api/systemctl/apiinfo'
 import type { ApiInfo } from '#/api/systemctl/apiinfo'
-import { Plus, Delete, ArrowDown } from '@element-plus/icons-vue'
+import { Plus, Delete, ArrowDown, VideoPlay } from '@element-plus/icons-vue'
 
 const tableData = ref<ApiInfo[]>([])
 
@@ -549,6 +592,96 @@ const submitDeleteGroup = async () => {
     }
   }
 }
+
+const testDrawer = ref({
+  visible: false,
+  title: 'API接口测试'
+})
+
+const testFormData = ref({
+  method: '',
+  path: '',
+  requestBody: '',
+  response: '',
+  useAuth: true // 默认开启鉴权
+})
+
+const getAccessToken = () => {
+  try {
+    const tokenData = localStorage.getItem('vben-web-ele-5.4.7-dev-core-access')
+    if (tokenData) {
+      const parsed = JSON.parse(tokenData)
+      return parsed.accessToken
+    }
+    return null
+  } catch (error) {
+    console.error('获取token失败:', error)
+    return null
+  }
+}
+
+const handleTest = (row: any) => {
+  testDrawer.value.visible = true
+  testFormData.value = {
+    method: row.method,
+    path: row.path,
+    requestBody: '',
+    response: '',
+    useAuth: true
+  }
+}
+
+const executeTest = async () => {
+  try {
+    const url = testFormData.value.path
+    const options: any = {
+      method: testFormData.value.method,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+
+    // 处理鉴权
+    if (testFormData.value.useAuth) {
+      const token = getAccessToken()
+      if (token) {
+        options.headers['Authorization'] = `Bearer ${token}`
+      } else {
+        ElMessage.warning('未找到访问令牌')
+        return
+      }
+    }
+
+    // 处理请求体
+    if (testFormData.value.method !== 'GET' && testFormData.value.requestBody) {
+      try {
+        options.body = JSON.stringify(JSON.parse(testFormData.value.requestBody))
+      } catch (e) {
+        ElMessage.error('请求参数JSON格式不正确')
+        return
+      }
+    }
+
+    const response = await fetch(url, options)
+    const responseText = await response.text() // 先获取文本响应
+
+    try {
+      // 尝试解析为JSON
+      const data = JSON.parse(responseText)
+      testFormData.value.response = JSON.stringify(data, null, 2)
+    } catch (e) {
+      // 如果不是JSON，直接显示文本
+      testFormData.value.response = responseText
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+  } catch (error: any) {
+    testFormData.value.response = `测试失败: ${error.message}`
+    ElMessage.error('接口测试失败')
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -594,5 +727,15 @@ const submitDeleteGroup = async () => {
 
 .el-tag {
   text-transform: uppercase;
+}
+
+.response-box {
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 </style>
