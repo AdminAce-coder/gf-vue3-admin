@@ -7,13 +7,13 @@ package service
 
 import (
 	"context"
-	"gf-vue3-admin/internal/model/utiliy"
-	tl "gf-vue3-admin/utility/terminal"
+	v1 "gf-vue3-admin/api/utility/v1"
 )
 
 type (
 	IUtility interface {
-		NewSshSshConn(ctx context.Context, info *utiliy.SshUserInfo) (*tl.SshConn, error)
+		// 新增SSH连接信息
+		NewSshConnect(ctx context.Context, req *v1.SshUserReq) error
 	}
 )
 

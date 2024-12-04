@@ -2,9 +2,10 @@ package utility
 
 import (
 	"context"
-	"gf-vue3-admin/internal/model/utiliy"
+	v1 "gf-vue3-admin/api/utility/v1"
+	"gf-vue3-admin/internal/dao"
+	"gf-vue3-admin/internal/model/do"
 	"gf-vue3-admin/internal/service"
-	tl "gf-vue3-admin/utility/terminal"
 )
 
 type sUtility struct{}
@@ -17,23 +18,20 @@ func new() *sUtility {
 	return &sUtility{}
 }
 
-func (s *sUtility) NewSshSshConn(ctx context.Context, info *utiliy.SshUserInfo) (*tl.SshConn, error) {
-
-	////Sshconfig
-	//tl := tl.Sshconfig{
-	//	Userinfo: info,
-	//}
-	//sshclinet, err := tl.NewSshConfig(ctx)
-	//if err != nil {
-	//	return nil, err
-	//	glog.Error(ctx, "创建sshclinet错误")
-	//}
-	////NewSshConn 创建 SSH 连接
-	//sshConn, err := sshclinet.NewSshConn(2048, 2048)
-	//if err != nil {
-	//	return nil, err
-	//	glog.Error(ctx, "sshConn创建错误")
-	//}
-	return nil, nil
-
+// 新增SSH连接信息
+func (s *sUtility) NewSshConnect(ctx context.Context, req *v1.SshUserReq) error {
+	db := dao.Ssh.DB()
+	_, err := db.Model("ssh").Data(do.Ssh{
+		HostName: req.Hostname,
+		User:     req.User,
+		Password: req.Password,
+		Port:     req.Port,
+		Host:     req.Host,
+	}).Insert()
+	if err != nil {
+		return err
+	}
+	return nil
 }
+
+//

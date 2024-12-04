@@ -45,7 +45,7 @@ func (s *sLogin) Register(ctx context.Context, req *v1.RegisterReq) error {
 	// 写入数据库,开启事务
 	err = dao.User.DB().Model("user").Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
 		_, err := dao.User.DB().Model("user").Data(do.User{
-			Username: req.Username,
+			UserName: req.Username,
 			Password: req.Password,
 		}).Insert()
 		return err
@@ -69,7 +69,7 @@ func (s *sLogin) Lonin(ctx context.Context, req *v1.LoginReq) (string, error) {
 		// 查询存储的密码
 		var user do.User
 		err := dao.User.DB().Model("user").
-			Where(dao.User.Columns().Username, req.Username).
+			Where(dao.User.Columns().UserName, req.Username).
 			Scan(&user)
 		if err != nil {
 			return "", docode.NewError(modecode.MODE_SQLFailed, "查询用户密码失败")
@@ -93,7 +93,7 @@ func (s *sLogin) Lonin(ctx context.Context, req *v1.LoginReq) (string, error) {
 
 // 查询用户
 func (s *sLogin) IsUser(username string) (bool, error) {
-	num, err := dao.User.DB().Model("user").Where(dao.User.Columns().Username, username).Count()
+	num, err := dao.User.DB().Model("user").Where(dao.User.Columns().UserName, username).Count()
 	if err != nil {
 		return false, err
 	}
@@ -110,7 +110,7 @@ func (s *sLogin) IsPasswdCorrect(username string) (bool, error) {
 	// 查询存储的密码
 	var user do.User
 	err := dao.User.DB().Model("user").
-		Where(dao.User.Columns().Username, username).
+		Where(dao.User.Columns().UserName, username).
 		Scan(&user)
 	if err != nil {
 		return false, docode.NewError(modecode.MODE_SQLFailed, "查询用户密码失败")

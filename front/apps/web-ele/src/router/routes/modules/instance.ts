@@ -23,6 +23,14 @@ const routes: RouteRecordRaw[] = [
             },
             component: () => import('#/views/instance//index.vue'),
         },
+        {
+            name: '终端',
+            path: '/instance/terminal',
+            meta: {
+              title: '终端',
+            },
+            component: () => import('#/views/instance/terminal.vue'),
+        },
     ],
   },
 ];

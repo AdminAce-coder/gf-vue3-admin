@@ -28,3 +28,17 @@ type SshInfoReq struct {
 
 type SshInfoRes struct {
 }
+
+// 主机用户
+type SshUserReq struct {
+	g.Meta `path:"/sshuser" method:"post" tags:"utility" dc:""`
+	// 用户
+	Hostname string `v:"required" dc:"连接名"`
+	User     string `v:"required" dc:"用户"`
+	Port     string `v:"required" dc:""`
+	Password string `v:"required" dc:""`
+	Host     string `v:"required" dc:"地址"`
+}
+
+type SshUserRes struct {
+}

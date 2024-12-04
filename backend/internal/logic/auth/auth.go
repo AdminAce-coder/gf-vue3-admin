@@ -24,7 +24,7 @@ func newAuth() *sAuth {
 func (s *sAuth) GetUserInfo(ctx context.Context, username string) (*do.User, error) {
 	var user *do.User
 	err := dao.User.DB().Model("user").
-		Where(dao.User.Columns().Username, username).
+		Where(dao.User.Columns().UserName, username).
 		Scan(&user)
 	if err != nil {
 		return nil, docode.NewError(modecode.MODE_SQLFailed, err.Error())
